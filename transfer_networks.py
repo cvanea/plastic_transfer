@@ -220,12 +220,11 @@ def network(seed, units, csv_directory_name, experiment_number, dog_epochs, uppe
 
     # Generate MCC history csvs
     if generate_graph:
-        results_data.generate_train_data(model, network_name, dog_train_images, dog_train_labels, all_dog_predictions,
-                                         csv_directory_name, experiment_number, seed)
-        results_data.generate_train_data(model, network_name, dog_val_images, dog_val_labels, all_dog_predictions,
-                                         csv_directory_name, experiment_number, seed)
-        results_data.generate_train_data(model, network_name, dog_test_images, dog_test_labels, all_dog_predictions,
-                                         csv_directory_name, experiment_number, seed)
+        generate_results = results_data.GenerateResults(model, network_name, all_dog_predictions, csv_directory_name,
+                                                        experiment_number, seed)
+        generate_results.generate_train_data(dog_train_images, dog_train_labels)
+        generate_results.generate_val_data(dog_val_images, dog_val_labels)
+        generate_results.generate_test_data(dog_test_images, dog_test_labels)
 
     # Save model and weights:
     if not os.path.isdir(save_dir):
