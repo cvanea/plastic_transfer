@@ -1,5 +1,4 @@
 """Cat detector source network which creates a dog detector target net."""
-from kerassurgeon.utils import get_inbound_nodes
 from numpy.random import seed
 
 seed(1)
@@ -29,19 +28,21 @@ import input_data as data
 import results_data
 import record_metadata
 
-# Some hyperparameters
+# Some hyperparameters for testing
 batch_size = 200
-outputs = 1
-epochs = 30
+cat_max_epochs = 30
 dog_epochs = 10
-units = 300
+num_starting_units = 300
 upper_threshold = 0.9
 lower_threshold = 0.2
 cat_learning_rate = 0.0001
 dog_learning_rate = 0.0001
+conv_activation = 'relu'
+loss_function = 'binary_crossentropy'
+
 seed = 1
 csv_directory_name = "testing"
-experiment_number = "1."
+experiment_number = "1"
 
 # Saving the weights
 save_dir = os.path.join(os.getcwd(), 'saved_models/' + csv_directory_name)
@@ -56,7 +57,7 @@ cat_network_name = "cat"
 
 
 def network(seed, units, csv_directory_name, experiment_number, dog_epochs, upper_threshold, lower_threshold,
-            cat_learning_rate, dog_learning_rate):
+            cat_learning_rate, dog_learning_rate, batch_size, conv_activation, loss_function):
 
     cat_train_labels, cat_train_images, cat_val_labels, cat_val_images = data.get_training_and_val_data('cat')
     dog_train_labels, dog_train_images, dog_val_labels, dog_val_images = data.get_training_and_val_data('dog')
@@ -69,47 +70,48 @@ def network(seed, units, csv_directory_name, experiment_number, dog_epochs, uppe
 
     model.add(Conv2D(32, (3, 3), padding='same',
                      input_shape=cat_train_images.shape[1:], kernel_initializer=weight_init))
-    model.add(Activation('relu'))
+    model.add(Activation(conv_activation))
     model.add(Conv2D(32, (3, 3), kernel_initializer=weight_init))
-    model.add(Activation('relu'))
+    model.add(Activation(conv_activation))
     model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Dropout(0.25))
 
     model.add(Conv2D(64, (3, 3), padding='same', kernel_initializer=weight_init))
-    model.add(Activation('relu'))
+    model.add(Activation(conv_activation))
     model.add(Conv2D(64, (3, 3), kernel_initializer=weight_init))
-    model.add(Activation('relu'))
+    model.add(Activation(conv_activation))
     model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Dropout(0.25))
 
     model.add(Flatten())
     model.add(Dense(units, kernel_initializer=weight_init, name="fc_layer"))
     model.add(Activation('relu'))
-    model.add(Dense(outputs, kernel_initializer=weight_init))
+    model.add(Dense(1, kernel_initializer=weight_init))
     model.add(Activation('sigmoid'))
 
     # Adam learning optimizer
     opt = keras.optimizers.adam(lr=cat_learning_rate)
 
     # train the model using Adam
-    model.compile(loss='binary_crossentropy', optimizer=opt, metrics=[binary_accuracy])
+    model.compile(loss=loss_function, optimizer=opt, metrics=[binary_accuracy])
 
     # Callbacks:
     # Built-in tensorflow data gathering at each epoch
-    tensor_board_cats = TensorBoard(log_dir="logs/cats/" + csv_directory_name + "_" + experiment_number + str(seed))
+    tensor_board_cats = TensorBoard(log_dir="logs/" + csv_directory_name + "/" + cat_network_name + "_" +
+                                            experiment_number + str(seed))
 
     # Stopping point value
     early_stopping = library_extensions.EarlyStoppingWithMax(target=0.75, monitor='val_binary_accuracy', min_delta=0,
                                                              patience=0, verbose=1, mode='auto', baseline=0.68)
 
     # Training source network
-    model.fit(cat_train_images, cat_train_labels, batch_size=batch_size, epochs=epochs,
+    model.fit(cat_train_images, cat_train_labels, batch_size=batch_size, epochs=cat_max_epochs,
               validation_data=(dog_train_images, dog_train_labels), shuffle=True,
               callbacks=[tensor_board_cats])
 
     # Save stopped epoch variable
     if early_stopping.stopped_epoch == 0:
-        cat_epoch_end = epochs
+        cat_epoch_end = cat_max_epochs
     else:
         cat_epoch_end = early_stopping.stopped_epoch
 
@@ -172,12 +174,12 @@ def network(seed, units, csv_directory_name, experiment_number, dog_epochs, uppe
     dogs_opt = keras.optimizers.adam(lr=dog_learning_rate)
 
     # train the model using Adam
-    dogs_model.compile(loss='binary_crossentropy', optimizer=dogs_opt, metrics=[binary_accuracy])
+    dogs_model.compile(loss=loss_function, optimizer=dogs_opt, metrics=[binary_accuracy])
 
     # Callbacks:
     # Built-in tensorflow data gathering at each epoch
-    dogs_tensor_board = TensorBoard(log_dir="logs/seeded_dogs/" + csv_directory_name + "_" + experiment_number +
-                                            str(seed))
+    dogs_tensor_board = TensorBoard(log_dir="logs/" + csv_directory_name + "/" + network_name + "_" +
+                                            experiment_number + str(seed))
 
     dogs_early_stopping = library_extensions.EarlyStoppingWithMax(target=1.00, monitor='binary_accuracy', min_delta=0,
                                                                   patience=0, verbose=1, mode='auto', baseline=0.99)
@@ -216,7 +218,7 @@ def network(seed, units, csv_directory_name, experiment_number, dog_epochs, uppe
     print(confusion_matrix(dog_test_labels, dog_predictions).ravel())
 
     # Save number of neurons for use in naive network
-    dogs_units = dogs_model.get_layer('fc_layer').get_config()['units']
+    num_seeded_units = dogs_model.get_layer('fc_layer').get_config()['units']
 
     # Generate MCC history csvs
     if generate_graph:
@@ -233,11 +235,13 @@ def network(seed, units, csv_directory_name, experiment_number, dog_epochs, uppe
     model.save(model_path)
     print('Saved trained model at %s ' % model_path)
 
-    record_metadata.record_metadata()
+    record_metadata.record_metadata(csv_directory_name, experiment_number, seed, cat_max_epochs, num_seeded_units,
+                                    lower_threshold, upper_threshold, cat_epoch_end, cat_learning_rate,
+                                    dog_learning_rate, batch_size, conv_activation, loss_function)
 
-    return dogs_units
+    return num_seeded_units
 
 
 if __name__ == "__main__":
-    network(seed, units, csv_directory_name, experiment_number, dog_epochs, upper_threshold, lower_threshold,
-            cat_learning_rate, dog_learning_rate)
+    network(seed, num_starting_units, csv_directory_name, experiment_number, dog_epochs, upper_threshold, lower_threshold,
+            cat_learning_rate, dog_learning_rate, batch_size, conv_activation, loss_function)

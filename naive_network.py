@@ -26,17 +26,17 @@ from sklearn.metrics import confusion_matrix, matthews_corrcoef
 import input_data as data
 import results_data
 import library_extensions
-import record_metadata
 
-# Some hyperparameters
+# Some hyperparameters for testing
 batch_size = 200
-outputs = 1
 epochs = 10
 dog_learning_rate = 0.0001
 seed = 1
 units = 300
 csv_directory_name = "testing"
-experiment_number = "1."
+experiment_number = "1"
+conv_activation = 'relu'
+loss_function = 'binary_crossentropy'
 
 # Saving the weights.
 save_dir = os.path.join(os.getcwd(), 'saved_models/' + csv_directory_name)
@@ -47,7 +47,8 @@ generate_graphs = True
 network_name = "naive"
 
 
-def network(seed, units, csv_directory_name, experiment_number, epochs, dog_learning_rate):
+def network(seed, units, csv_directory_name, experiment_number, epochs, dog_learning_rate, batch_size, conv_activation,
+            loss_function):
     dog_train_labels, dog_train_images, dog_val_labels, dog_val_images = data.get_training_and_val_data('dog')
     dog_test_labels, dog_test_images = data.get_test_data("dog")
 
@@ -58,35 +59,35 @@ def network(seed, units, csv_directory_name, experiment_number, epochs, dog_lear
 
     model.add(Conv2D(32, (3, 3), padding='same',
                      input_shape=dog_train_images.shape[1:], kernel_initializer=weight_init))
-    model.add(Activation('relu'))
+    model.add(Activation(conv_activation))
     model.add(Conv2D(32, (3, 3), kernel_initializer=weight_init))
-    model.add(Activation('relu'))
+    model.add(Activation(conv_activation))
     model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Dropout(0.25))
 
     model.add(Conv2D(64, (3, 3), padding='same', kernel_initializer=weight_init))
-    model.add(Activation('relu'))
+    model.add(Activation(conv_activation))
     model.add(Conv2D(64, (3, 3), kernel_initializer=weight_init))
-    model.add(Activation('relu'))
+    model.add(Activation(conv_activation))
     model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Dropout(0.25))
 
     model.add(Flatten())
     model.add(Dense(units, kernel_initializer=weight_init))
     model.add(Activation('relu'))
-    model.add(Dense(outputs, kernel_initializer=weight_init))
+    model.add(Dense(1, kernel_initializer=weight_init))
     model.add(Activation('sigmoid'))
 
     # Adam learning optimizer
     opt = keras.optimizers.adam(lr=dog_learning_rate)
 
     # train the model using Adam
-    model.compile(loss='binary_crossentropy', optimizer=opt, metrics=[binary_accuracy])
+    model.compile(loss=loss_function, optimizer=opt, metrics=[binary_accuracy])
 
     # Callbacks:
     # Built-in tensorflow data gathering at each epoch
-    tensor_board = TensorBoard(log_dir="logs/naive_dogs/" + csv_directory_name + "_" + experiment_number +
-                                       str(seed))
+    tensor_board = TensorBoard(log_dir="logs/" + csv_directory_name + "/" + network_name + "_" +
+                                            experiment_number + str(seed))
 
     early_stopping = library_extensions.EarlyStoppingWithMax(target=1.00, monitor='binary_accuracy', min_delta=0,
                                                              patience=0, verbose=1, mode='auto', baseline=0.99)
@@ -128,8 +129,7 @@ def network(seed, units, csv_directory_name, experiment_number, epochs, dog_lear
         generate_results.generate_val_data(dog_val_images, dog_val_labels)
         generate_results.generate_test_data(dog_test_images, dog_test_labels)
 
-    record_metadata.record_metadata()
-
 
 if __name__ == "__main__":
-    network(seed, units, csv_directory_name, experiment_number, epochs, dog_learning_rate)
+    network(seed, units, csv_directory_name, experiment_number, epochs, dog_learning_rate, batch_size, conv_activation,
+            loss_function)

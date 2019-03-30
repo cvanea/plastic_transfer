@@ -24,10 +24,7 @@ class GenerateResults():
     # Generate validation confusion history csv
     def generate_val_data(self, images, labels):
         pred_val_classes = self.model.predict_classes(images)
-        # all_predictions.val_confusion.append(confusion_matrix(dog_val_labels, pred_val_classes).ravel())
         self.all_predictions.val_MCC.append(matthews_corrcoef(labels, pred_val_classes))
-
-        # all_confusion_array = np.array(all_predictions.val_confusion)
         all_val_MCC = np.array(self.all_predictions.val_MCC)
 
         self._generate_csv('val', all_val_MCC)
@@ -35,25 +32,20 @@ class GenerateResults():
     # Generate testing confusion history csv
     def generate_test_data(self, images, labels):
         pred_test_classes = self.model.predict_classes(images)
-        # all_predictions.test_confusion_history.append(confusion_matrix(dog_test_labels, pred_test_classes).ravel())
         self.all_predictions.test_MCC.append(matthews_corrcoef(labels, pred_test_classes))
-
-        # all_balanced_confusion_array = np.array(all_predictions.test_confusion_history)
         all_test_MCC = np.array(self.all_predictions.test_MCC)
 
         self._generate_csv('test', all_test_MCC)
 
-
     def _generate_csv(self, dataset_type, all_MCCs):
-        if not os.path.isfile(
-                "csv/" + self.csv_directory_name + "/" + dataset_type + "MCC/" + self.network_name + "_" + self.experiment_number + str(
-                    self.seed) + ".csv"):
-            np.savetxt(
-                "csv/" + self.csv_directory_name + "/" + dataset_type + "MCC/" + self.network_name + "_" + self.experiment_number + str(
-                    self.seed) + ".csv", np.column_stack(all_MCCs), delimiter=",", fmt="%s")
+        file_path = "csv/" + self.csv_directory_name + "/" + dataset_type + "MCC/" + self.network_name + "_" + \
+                    self.experiment_number + ".csv"
+        if not os.path.isfile(file_path):
+            np.savetxt(file_path, np.column_stack(all_MCCs), delimiter=",", fmt="%s")
         else:
-            with open(
-                    "csv/" + self.csv_directory_name + "/" + dataset_type + "MCC/" + self.network_name + "_" + self.experiment_number + str(
-                        self.seed) + ".csv",
-                    "a") as f:
+            with open(file_path, "a") as f:
                 np.savetxt(f, np.column_stack(all_MCCs), delimiter=",", fmt="%s")
+
+
+# TODO: make sure it saves each seed run in one file.
+# TODO: if directory doesn't exist, make it.
