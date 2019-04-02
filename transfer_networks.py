@@ -31,7 +31,7 @@ import record_metadata
 # Some hyperparameters for testing
 batch_size = 200
 cat_max_epochs = 30
-dog_epochs = 10
+dog_epochs = 3
 num_starting_units = 300
 upper_threshold = 0.9
 lower_threshold = 0.2
@@ -101,13 +101,13 @@ def network(seed, units, csv_directory_name, experiment_number, dog_epochs, uppe
                                             experiment_number + str(seed))
 
     # Stopping point value
-    early_stopping = library_extensions.EarlyStoppingWithMax(target=0.75, monitor='val_binary_accuracy', min_delta=0,
+    early_stopping = library_extensions.EarlyStoppingWithMax(target=0.74, monitor='val_binary_accuracy', min_delta=0,
                                                              patience=0, verbose=1, mode='auto', baseline=0.68)
 
     # Training source network
     model.fit(cat_train_images, cat_train_labels, batch_size=batch_size, epochs=cat_max_epochs,
               validation_data=(dog_train_images, dog_train_labels), shuffle=True,
-              callbacks=[tensor_board_cats])
+              callbacks=[tensor_board_cats, early_stopping])
 
     # Save stopped epoch variable
     if early_stopping.stopped_epoch == 0:
@@ -235,9 +235,9 @@ def network(seed, units, csv_directory_name, experiment_number, dog_epochs, uppe
     model.save(model_path)
     print('Saved trained model at %s ' % model_path)
 
-    record_metadata.record_metadata(csv_directory_name, experiment_number, seed, cat_max_epochs, num_seeded_units,
-                                    lower_threshold, upper_threshold, cat_epoch_end, cat_learning_rate,
-                                    dog_learning_rate, batch_size, conv_activation, loss_function)
+    # record_metadata.record_metadata(csv_directory_name, experiment_number, cat_max_epochs, num_seeded_units,
+    #                                 lower_threshold, upper_threshold, cat_epoch_end, cat_learning_rate,
+    #                                 dog_learning_rate, batch_size, conv_activation, loss_function)
 
     return num_seeded_units
 

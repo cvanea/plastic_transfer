@@ -74,8 +74,6 @@ class PredictionHistory(Callback):
         if self.generate_graph:
             self.train_MCC = []
             self.val_MCC = []
-            # self.val_confusion = []
-            # self.test_confusion_history = []
             self.test_MCC = []
 
     def on_epoch_begin(self, epoch, logs={}):
@@ -84,13 +82,9 @@ class PredictionHistory(Callback):
             self.train_MCC.append(matthews_corrcoef(self.train_labels, pred_train_classes))
 
             pred_val_classes = self.model.predict_classes(self.val_images)
-            # self.val_confusion.append(confusion_matrix(dog_val_labels, pred_val_classes).ravel())
             self.val_MCC.append(matthews_corrcoef(self.val_labels, pred_val_classes))
 
             pred_test_classes = self.model.predict_classes(self.test_images)
-            # print("True Negative, False Positive, False Negative, True Positive:")
-            # print(confusion_matrix(dog_test_labels, pred_test_classes).ravel())
-            # self.test_confusion_history.append(confusion_matrix(dog_test_labels, pred_test_classes).ravel())
             self.test_MCC.append(matthews_corrcoef(self.test_labels, pred_test_classes))
 
 

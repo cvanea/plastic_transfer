@@ -29,7 +29,7 @@ import library_extensions
 
 # Some hyperparameters for testing
 batch_size = 200
-epochs = 10
+epochs = 5
 dog_learning_rate = 0.0001
 seed = 1
 units = 300

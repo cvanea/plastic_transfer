@@ -1,6 +1,7 @@
 import os
 import numpy as np
 from sklearn.metrics import matthews_corrcoef
+import pandas
 
 
 class GenerateResults():
@@ -37,15 +38,19 @@ class GenerateResults():
 
         self._generate_csv('test', all_test_MCC)
 
-    def _generate_csv(self, dataset_type, all_MCCs):
-        file_path = "csv/" + self.csv_directory_name + "/" + dataset_type + "MCC/" + self.network_name + "_" + \
-                    self.experiment_number + ".csv"
+    def _generate_csv(self, dataset_type, new_MCCs):
+        new_MCCs = pandas.DataFrame(new_MCCs)
+
+        file_dirs = "csv/" + self.csv_directory_name + "/" + dataset_type + "MCC"
+        file_name = self.network_name + "_" + self.experiment_number + ".csv"
+
+        if not os.path.isdir(file_dirs):
+            os.makedirs(file_dirs)
+        file_path = os.path.join(file_dirs, file_name)
+
         if not os.path.isfile(file_path):
-            np.savetxt(file_path, np.column_stack(all_MCCs), delimiter=",", fmt="%s")
+            new_MCCs.to_csv(file_path)
         else:
-            with open(file_path, "a") as f:
-                np.savetxt(f, np.column_stack(all_MCCs), delimiter=",", fmt="%s")
-
-
-# TODO: make sure it saves each seed run in one file.
-# TODO: if directory doesn't exist, make it.
+            prev_MCCs = pandas.read_csv(file_path, index_col=0)
+            prev_MCCs[str(self.seed)] = new_MCCs
+            prev_MCCs.to_csv(file_path)
