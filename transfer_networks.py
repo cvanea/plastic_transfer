@@ -26,7 +26,7 @@ from sklearn.metrics import confusion_matrix, matthews_corrcoef
 import library_extensions
 import input_data as data
 import results_data
-import record_metadata
+import hyperparameters
 
 # Some hyperparameters for testing
 batch_size = 200
@@ -50,15 +50,19 @@ model_name = 'cat_model_' + experiment_number + str(seed) + '.h5'
 dog_model_name = 'seeded_model_' + experiment_number + str(seed) + '.h5'
 
 # Data gathering conditions
-generate_graph = True
-generate_cat_train_graph = False
+generate_mcc_results = True
+generate_accuracy_results = True
+generate_cat_train_results = False
 network_name = "seeded"
 cat_network_name = "cat"
 
 
-def network(seed, units, csv_directory_name, experiment_number, dog_epochs, upper_threshold, lower_threshold,
-            cat_learning_rate, dog_learning_rate, batch_size, conv_activation, loss_function):
+# def network(seed, units, csv_directory_name, run_num, dog_epochs, upper_threshold, lower_threshold,
+#             cat_learning_rate, dog_learning_rate, batch_size, conv_activation, loss_function):
 
+def network(seed, units, csv_directory_name, run_num, dog_epochs, upper_threshold, lower_threshold,
+            cat_learning_rate, dog_learning_rate, batch_size, conv_activation, loss_function):
+    
     cat_train_labels, cat_train_images, cat_val_labels, cat_val_images = data.get_training_and_val_data('cat')
     dog_train_labels, dog_train_images, dog_val_labels, dog_val_images = data.get_training_and_val_data('dog')
     dog_test_labels, dog_test_images = data.get_test_data('dog')
@@ -98,7 +102,7 @@ def network(seed, units, csv_directory_name, experiment_number, dog_epochs, uppe
     # Callbacks:
     # Built-in tensorflow data gathering at each epoch
     tensor_board_cats = TensorBoard(log_dir="logs/" + csv_directory_name + "/" + cat_network_name + "_" +
-                                            experiment_number + str(seed))
+                                            run_num + str(seed))
 
     # Stopping point value
     early_stopping = library_extensions.EarlyStoppingWithMax(target=0.74, monitor='val_binary_accuracy', min_delta=0,
@@ -141,7 +145,7 @@ def network(seed, units, csv_directory_name, experiment_number, dog_epochs, uppe
     print(confusion_matrix(dog_val_labels, predictions).ravel())
 
     # Old generates data at stopping point:
-    if generate_cat_train_graph:
+    if generate_cat_train_results:
         cat_stopping_confusion = [cat_stopping_confusion]
         cat_stopping_MCC = [cat_stopping_MCC]
 
@@ -179,14 +183,15 @@ def network(seed, units, csv_directory_name, experiment_number, dog_epochs, uppe
     # Callbacks:
     # Built-in tensorflow data gathering at each epoch
     dogs_tensor_board = TensorBoard(log_dir="logs/" + csv_directory_name + "/" + network_name + "_" +
-                                            experiment_number + str(seed))
+                                            run_num + str(seed))
 
     dogs_early_stopping = library_extensions.EarlyStoppingWithMax(target=1.00, monitor='binary_accuracy', min_delta=0,
                                                                   patience=0, verbose=1, mode='auto', baseline=0.99)
 
-    all_dog_predictions = library_extensions.PredictionHistory(generate_graph, model, dog_train_images,
-                                                               dog_train_labels, dog_val_images, dog_val_labels,
-                                                               dog_test_images, dog_test_labels)
+    all_dog_predictions = library_extensions.PredictionHistory(generate_mcc_results, generate_accuracy_results,
+                                                               model, dog_train_images, dog_train_labels,
+                                                               dog_val_images, dog_val_labels, dog_test_images,
+                                                               dog_test_labels)
 
     # Training target network
     dogs_model.fit(dog_train_images, dog_train_labels, epochs=dog_epochs,
@@ -220,13 +225,19 @@ def network(seed, units, csv_directory_name, experiment_number, dog_epochs, uppe
     # Save number of neurons for use in naive network
     num_seeded_units = dogs_model.get_layer('fc_layer').get_config()['units']
 
-    # Generate MCC history csvs
-    if generate_graph:
+    # Generate results
+    if generate_mcc_results or generate_accuracy_results:
         generate_results = results_data.GenerateResults(model, network_name, all_dog_predictions, csv_directory_name,
-                                                        experiment_number, seed)
-        generate_results.generate_train_data(dog_train_images, dog_train_labels)
-        generate_results.generate_val_data(dog_val_images, dog_val_labels)
-        generate_results.generate_test_data(dog_test_images, dog_test_labels)
+                                                        run_num, seed)
+        generate_results.generate_seeded_units_stopped_epoch_data(num_seeded_units, cat_epoch_end)
+        if generate_mcc_results:
+            generate_results.generate_train_data('mcc')
+            generate_results.generate_val_data('mcc')
+            generate_results.generate_test_data('mcc')
+        if generate_accuracy_results:
+            generate_results.generate_train_data('accuracy')
+            generate_results.generate_val_data('accuracy')
+            generate_results.generate_test_data('accuracy')
 
     # Save model and weights:
     if not os.path.isdir(save_dir):
@@ -235,13 +246,13 @@ def network(seed, units, csv_directory_name, experiment_number, dog_epochs, uppe
     model.save(model_path)
     print('Saved trained model at %s ' % model_path)
 
-    # record_metadata.record_metadata(csv_directory_name, experiment_number, cat_max_epochs, num_seeded_units,
-    #                                 lower_threshold, upper_threshold, cat_epoch_end, cat_learning_rate,
-    #                                 dog_learning_rate, batch_size, conv_activation, loss_function)
+    hyperparameters.record_metadata(csv_directory_name, cat_max_epochs, lower_threshold,
+                                    upper_threshold, cat_learning_rate, dog_learning_rate, batch_size,
+                                    conv_activation, loss_function)
 
     return num_seeded_units
 
 
 if __name__ == "__main__":
-    network(seed, num_starting_units, csv_directory_name, experiment_number, dog_epochs, upper_threshold, lower_threshold,
-            cat_learning_rate, dog_learning_rate, batch_size, conv_activation, loss_function)
+    network(seed, num_starting_units, csv_directory_name, experiment_number, dog_epochs, upper_threshold,
+            lower_threshold, cat_learning_rate, dog_learning_rate, batch_size, conv_activation, loss_function)

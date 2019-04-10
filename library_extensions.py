@@ -59,10 +59,11 @@ def get_apoz(model, layer, x_val, node_indices=None):
 
 # Records data at each epoch of training.
 class PredictionHistory(Callback):
-    def __init__(self, generate_graph, model, train_images, train_labels, val_images, val_labels, test_images,
+    def __init__(self, generate_mcc_results, generate_accuracy_results, model, train_images, train_labels, val_images, val_labels, test_images,
                  test_labels):
         super().__init__()
-        self.generate_graph = generate_graph
+        self.generate_mcc_results = generate_mcc_results
+        self.generate_accuracy_results = generate_accuracy_results
         self.model = model
         self.train_images = train_images
         self.train_labels = train_labels
@@ -71,22 +72,55 @@ class PredictionHistory(Callback):
         self.test_images = test_images
         self.test_labels = test_labels
 
-        if self.generate_graph:
-            self.train_MCC = []
-            self.val_MCC = []
-            self.test_MCC = []
+        if self.generate_mcc_results:
+            self.train_mcc = []
+            self.val_mcc = []
+            self.test_mcc = []
+            self.train_accuracy = []
+            self.val_accuracy = []
+            self.test_accuracy = []
 
     def on_epoch_begin(self, epoch, logs={}):
-        if self.generate_graph:
+        if self.generate_mcc_results:
             pred_train_classes = self.model.predict_classes(self.train_images)
-            self.train_MCC.append(matthews_corrcoef(self.train_labels, pred_train_classes))
+            self.train_mcc.append(matthews_corrcoef(self.train_labels, pred_train_classes))
 
             pred_val_classes = self.model.predict_classes(self.val_images)
-            self.val_MCC.append(matthews_corrcoef(self.val_labels, pred_val_classes))
+            self.val_mcc.append(matthews_corrcoef(self.val_labels, pred_val_classes))
 
             pred_test_classes = self.model.predict_classes(self.test_images)
-            self.test_MCC.append(matthews_corrcoef(self.test_labels, pred_test_classes))
+            self.test_mcc.append(matthews_corrcoef(self.test_labels, pred_test_classes))
 
+        if self.generate_accuracy_results:
+            current_train_accuracy = self.model.evaluate(self.train_images, self.train_labels)
+            self.train_accuracy.append(current_train_accuracy)
+
+            current_val_accuracy = self.model.evaluate(self.val_images, self.val_labels)
+            self.val_accuracy.append(current_val_accuracy)
+
+            current_test_accuracy = self.model.evaluate(self.test_images, self.test_labels)
+            self.test_accuracy.append(current_test_accuracy)
+
+    def on_train_end(self, logs={}):
+        if self.generate_mcc_results:
+            pred_train_classes = self.model.predict_classes(self.train_images)
+            self.train_mcc.append(matthews_corrcoef(self.train_labels, pred_train_classes))
+
+            pred_val_classes = self.model.predict_classes(self.val_images)
+            self.val_mcc.append(matthews_corrcoef(self.val_labels, pred_val_classes))
+
+            pred_test_classes = self.model.predict_classes(self.test_images)
+            self.test_mcc.append(matthews_corrcoef(self.test_labels, pred_test_classes))
+
+        if self.generate_accuracy_results:
+            current_train_accuracy = self.model.evaluate(self.train_images, self.train_labels)
+            self.train_accuracy.append(current_train_accuracy)
+
+            current_val_accuracy = self.model.evaluate(self.val_images, self.val_labels)
+            self.val_accuracy.append(current_val_accuracy)
+
+            current_test_accuracy = self.model.evaluate(self.test_images, self.test_labels)
+            self.test_accuracy.append(current_test_accuracy)
 
 # Stopping the source network at the target accuracy peak.
 class EarlyStoppingWithMax(EarlyStopping):
