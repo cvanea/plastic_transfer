@@ -24,48 +24,47 @@ from keras.callbacks import TensorBoard
 from sklearn.metrics import confusion_matrix, matthews_corrcoef
 
 import library_extensions
-import input_data as data
+import input_data
 import results_data
-import hyperparameters
+import hyperparameters as hp
 
 # Some hyperparameters for testing
-batch_size = 200
-cat_max_epochs = 30
-dog_epochs = 3
-num_starting_units = 300
-upper_threshold = 0.9
-lower_threshold = 0.2
-cat_learning_rate = 0.0001
-dog_learning_rate = 0.0001
-conv_activation = 'relu'
-loss_function = 'binary_crossentropy'
+hp = hp.Hyperparameters()
 
-seed = 1
-csv_directory_name = "testing"
-experiment_number = "1"
+hp.source_max_epochs = 2
+hp.target_max_epochs = 2
+hp.num_starting_units = 300
+hp.upper_threshold = 0.9
+hp.lower_threshold = 0.2
+hp.source_lr = 0.0001
+hp.target_lr = 0.0001
+hp.batch_size = 200
+hp.conv_activation = 'relu'
+hp.loss_function = 'binary_crossentropy'
 
-# Saving the weights
-save_dir = os.path.join(os.getcwd(), 'saved_models/' + csv_directory_name)
-model_name = 'cat_model_' + experiment_number + str(seed) + '.h5'
-dog_model_name = 'seeded_model_' + experiment_number + str(seed) + '.h5'
-
-# Data gathering conditions
-generate_mcc_results = True
-generate_accuracy_results = True
-generate_cat_train_results = False
+hp.experiment_name = "testing"
+run_num = 1
+seed = 4
 network_name = "seeded"
 cat_network_name = "cat"
 
+# Saving the weights
+save_dir = os.path.join(os.getcwd(), 'results/' + hp.experiment_name + "/run_" + str(run_num) + "/" + network_name)
+dog_model_name = network_name + '_model_seed_' + str(seed) + '.h5'
+model_name = network_name + '_model_seed_' + str(seed) + '.h5'
 
-# def network(seed, units, csv_directory_name, run_num, dog_epochs, upper_threshold, lower_threshold,
-#             cat_learning_rate, dog_learning_rate, batch_size, conv_activation, loss_function):
+# Data gathering conditions
+generate_mcc_results = False
+generate_accuracy_results = False
+generate_cat_train_results = False
+save_cat_model = False
+save_dog_model = False
 
-def network(seed, units, csv_directory_name, run_num, dog_epochs, upper_threshold, lower_threshold,
-            cat_learning_rate, dog_learning_rate, batch_size, conv_activation, loss_function):
-    
-    cat_train_labels, cat_train_images, cat_val_labels, cat_val_images = data.get_training_and_val_data('cat')
-    dog_train_labels, dog_train_images, dog_val_labels, dog_val_images = data.get_training_and_val_data('dog')
-    dog_test_labels, dog_test_images = data.get_test_data('dog')
+
+def network(seed, run_num, hp):
+    cat_train_labels, cat_train_images, cat_val_labels, cat_val_images = input_data.get_training_and_val_data('cat')
+    dog_train_labels, dog_train_images, dog_val_labels, dog_val_images = input_data.get_training_and_val_data('dog')
+    dog_test_labels, dog_test_images = input_data.get_test_data('dog')
 
     # Model
     model = Sequential()
@@ -74,62 +73,64 @@ def network(seed, units, csv_directory_name, run_num, dog_epochs, upper_threshol
 
     model.add(Conv2D(32, (3, 3), padding='same',
                      input_shape=cat_train_images.shape[1:], kernel_initializer=weight_init))
-    model.add(Activation(conv_activation))
+    model.add(Activation(hp.conv_activation))
     model.add(Conv2D(32, (3, 3), kernel_initializer=weight_init))
-    model.add(Activation(conv_activation))
+    model.add(Activation(hp.conv_activation))
     model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Dropout(0.25))
 
     model.add(Conv2D(64, (3, 3), padding='same', kernel_initializer=weight_init))
-    model.add(Activation(conv_activation))
+    model.add(Activation(hp.conv_activation))
     model.add(Conv2D(64, (3, 3), kernel_initializer=weight_init))
-    model.add(Activation(conv_activation))
+    model.add(Activation(hp.conv_activation))
     model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Dropout(0.25))
 
     model.add(Flatten())
-    model.add(Dense(units, kernel_initializer=weight_init, name="fc_layer"))
+    model.add(Dense(hp.num_starting_units, kernel_initializer=weight_init, name="fc_layer"))
     model.add(Activation('relu'))
     model.add(Dense(1, kernel_initializer=weight_init))
     model.add(Activation('sigmoid'))
 
     # Adam learning optimizer
-    opt = keras.optimizers.adam(lr=cat_learning_rate)
+    opt = keras.optimizers.adam(lr=hp.source_lr)
 
     # train the model using Adam
-    model.compile(loss=loss_function, optimizer=opt, metrics=[binary_accuracy])
+    model.compile(loss=hp.loss_function, optimizer=opt, metrics=[binary_accuracy])
 
     # Callbacks:
     # Built-in tensorflow data gathering at each epoch
-    tensor_board_cats = TensorBoard(log_dir="logs/" + csv_directory_name + "/" + cat_network_name + "_" +
-                                            run_num + str(seed))
+    tensor_board_cats = TensorBoard(
+        log_dir="results/" + hp.experiment_name + "/run_" + str(run_num) + "/" + cat_network_name + "/logs/seed_" + str(
+            seed))
 
     # Stopping point value
     early_stopping = library_extensions.EarlyStoppingWithMax(target=0.74, monitor='val_binary_accuracy', min_delta=0,
                                                              patience=0, verbose=1, mode='auto', baseline=0.68)
 
     # Training source network
-    model.fit(cat_train_images, cat_train_labels, batch_size=batch_size, epochs=cat_max_epochs,
+    model.fit(cat_train_images, cat_train_labels, batch_size=hp.batch_size, epochs=hp.source_max_epochs,
               validation_data=(dog_train_images, dog_train_labels), shuffle=True,
               callbacks=[tensor_board_cats, early_stopping])
 
     # Save stopped epoch variable
     if early_stopping.stopped_epoch == 0:
-        cat_epoch_end = cat_max_epochs
+        cat_epoch_end = hp.source_max_epochs
     else:
         cat_epoch_end = early_stopping.stopped_epoch
 
     # Save model and weights:
-    if not os.path.isdir(save_dir):
-        os.makedirs(save_dir)
-    model_path = os.path.join(save_dir, model_name)
-    model.save(model_path)
-    print('Saved trained model at %s ' % model_path)
+    if save_cat_model:
+        if not os.path.isdir(save_dir):
+            os.makedirs(save_dir)
+        model_path = os.path.join(save_dir, model_name)
+        model.save(model_path)
+        print('Saved trained model at %s ' % model_path)
 
     # Evaluate on Validation Data:
     predictions = model.predict_classes(cat_val_images)
 
-    cat_stopping_MCC = str(matthews_corrcoef(cat_val_labels, predictions))
+    cat_stopping_mcc = str(matthews_corrcoef(cat_val_labels, predictions))
 
     print("Cat Evaluation:")
     print("Matthews Correlation Coefficient: " + str(matthews_corrcoef(cat_val_labels, predictions)))
@@ -147,13 +148,13 @@ def network(seed, units, csv_directory_name, run_num, dog_epochs, upper_threshol
     # Old generates data at stopping point:
     if generate_cat_train_results:
         cat_stopping_confusion = [cat_stopping_confusion]
-        cat_stopping_MCC = [cat_stopping_MCC]
+        cat_stopping_mcc = [cat_stopping_mcc]
 
         np.array(cat_stopping_confusion)
-        np.array(cat_stopping_MCC)
+        np.array(cat_stopping_mcc)
 
         np.savetxt("csv/CatConfusion/cat_results_" + str(seed) + ".csv",
-                   np.column_stack((cat_stopping_confusion, cat_stopping_MCC)),
+                   np.column_stack((cat_stopping_confusion, cat_stopping_mcc)),
                    delimiter=",", fmt="%s")
 
     # APoZ values
@@ -161,7 +162,7 @@ def network(seed, units, csv_directory_name, run_num, dog_epochs, upper_threshol
 
     apoz = library_extensions.get_apoz(model, layer, cat_train_images)
 
-    discard_indices = np.where((apoz <= lower_threshold) | (apoz >= upper_threshold))[0]
+    discard_indices = np.where((apoz <= hp.lower_threshold) | (apoz >= hp.upper_threshold))[0]
 
     # Creating the new target model.
     def my_delete_channels(model, layer, channels, *, node_indices=None):
@@ -175,15 +176,16 @@ def network(seed, units, csv_directory_name, run_num, dog_epochs, upper_threshol
     print(dogs_model.summary())
 
     # Adam learning optimizer
-    dogs_opt = keras.optimizers.adam(lr=dog_learning_rate)
+    dogs_opt = keras.optimizers.adam(lr=hp.target_lr)
 
     # train the model using Adam
-    dogs_model.compile(loss=loss_function, optimizer=dogs_opt, metrics=[binary_accuracy])
+    dogs_model.compile(loss=hp.loss_function, optimizer=dogs_opt, metrics=[binary_accuracy])
 
     # Callbacks:
     # Built-in tensorflow data gathering at each epoch
-    dogs_tensor_board = TensorBoard(log_dir="logs/" + csv_directory_name + "/" + network_name + "_" +
-                                            run_num + str(seed))
+    dogs_tensor_board = TensorBoard(
+        log_dir="results/" + hp.experiment_name + "/run_" + str(run_num) + "/" + network_name + "/logs/seed_" + str(
+            seed))
 
     dogs_early_stopping = library_extensions.EarlyStoppingWithMax(target=1.00, monitor='binary_accuracy', min_delta=0,
                                                                   patience=0, verbose=1, mode='auto', baseline=0.99)
@@ -194,9 +196,9 @@ def network(seed, units, csv_directory_name, run_num, dog_epochs, upper_threshol
                                                                dog_test_labels)
 
     # Training target network
-    dogs_model.fit(dog_train_images, dog_train_labels, epochs=dog_epochs,
-                   batch_size=batch_size, validation_data=(dog_val_images, dog_val_labels),
-                   shuffle=True, callbacks=[all_dog_predictions, dogs_tensor_board, dogs_early_stopping])
+    dog_history = dogs_model.fit(dog_train_images, dog_train_labels, epochs=hp.target_max_epochs,
+                                 batch_size=hp.batch_size, validation_data=(dog_val_images, dog_val_labels),
+                                 shuffle=True, callbacks=[all_dog_predictions, dogs_tensor_board])
 
     # Predictions on training data
     dog_train_predictions = dogs_model.predict_classes(dog_train_images)
@@ -227,8 +229,8 @@ def network(seed, units, csv_directory_name, run_num, dog_epochs, upper_threshol
 
     # Generate results
     if generate_mcc_results or generate_accuracy_results:
-        generate_results = results_data.GenerateResults(model, network_name, all_dog_predictions, csv_directory_name,
-                                                        run_num, seed)
+        generate_results = results_data.GenerateResults(network_name, all_dog_predictions, dog_history,
+                                                        hp.experiment_name, run_num, seed)
         generate_results.generate_seeded_units_stopped_epoch_data(num_seeded_units, cat_epoch_end)
         if generate_mcc_results:
             generate_results.generate_train_data('mcc')
@@ -240,19 +242,19 @@ def network(seed, units, csv_directory_name, run_num, dog_epochs, upper_threshol
             generate_results.generate_test_data('accuracy')
 
     # Save model and weights:
-    if not os.path.isdir(save_dir):
-        os.makedirs(save_dir)
-    model_path = os.path.join(save_dir, dog_model_name)
-    model.save(model_path)
-    print('Saved trained model at %s ' % model_path)
+    if save_dog_model:
+        if not os.path.isdir(save_dir):
+            os.makedirs(save_dir)
+        model_path = os.path.join(save_dir, dog_model_name)
+        model.save(model_path)
+        print('Saved trained model at %s ' % model_path)
 
-    hyperparameters.record_metadata(csv_directory_name, cat_max_epochs, lower_threshold,
-                                    upper_threshold, cat_learning_rate, dog_learning_rate, batch_size,
-                                    conv_activation, loss_function)
+    # Save parameters if they aren't already saved
+    if not os.path.exists("results/" + hp.experiment_name + "/params.csv"):
+        hp.to_csv(run_num)
 
     return num_seeded_units
 
 
 if __name__ == "__main__":
-    network(seed, num_starting_units, csv_directory_name, experiment_number, dog_epochs, upper_threshold,
-            lower_threshold, cat_learning_rate, dog_learning_rate, batch_size, conv_activation, loss_function)
+    network(seed, run_num, hp)
