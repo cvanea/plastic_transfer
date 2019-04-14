@@ -9,3 +9,7 @@ def create_path(*parts):
         if "." not in part and not os.path.isdir(path):
             os.makedirs(path)
     return path
+
+def save_results_to_bucket():
+    script_path = create_path('gsutil_to_bucket.sh')
+    os.system('sh ' + script_path)

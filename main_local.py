@@ -3,6 +3,7 @@
 import transfer_networks, naive_network, hyperparameters as hp
 from run import Run
 from gen_graphs import gen_graphs
+from utils import save_results_to_bucket
 
 hp = hp.Hyperparameters()
 
@@ -18,7 +19,7 @@ hp.conv_activation = 'relu'
 hp.loss_function = 'binary_crossentropy'
 
 num_runs = 1
-num_seeds = 3
+num_seeds = 1
 
 if __name__ == "__main__":
 
@@ -38,3 +39,5 @@ if __name__ == "__main__":
             run.save(seeded=False)
 
         gen_graphs(run)
+
+    save_results_to_bucket()
