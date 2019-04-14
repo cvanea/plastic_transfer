@@ -2,6 +2,9 @@
 
 from numpy.random import seed
 
+from run import Run
+from utils import create_path
+
 seed(1)
 import os
 
@@ -24,7 +27,6 @@ from keras.callbacks import TensorBoard
 from sklearn.metrics import confusion_matrix, matthews_corrcoef
 
 import input_data as data
-import results_data
 import library_extensions
 import hyperparameters as hp
 
@@ -40,13 +42,14 @@ hp.batch_size = 200
 hp.conv_activation = 'relu'
 hp.loss_function = 'binary_crossentropy'
 
-hp.experiment_name = "testing"
 run_num = 1
-seed = 2
+seed = 0
 network_name = "naive"
 
+run = Run("testing", 1, hp)
+
 # Saving the weights.
-save_dir = os.path.join(os.getcwd(), 'results/' + hp.experiment_name + "/run_" + str(run_num) + "/" + network_name)
+save_dir = run.path + "/" + network_name
 model_name = network_name + '_model_seed_' + str(seed) + '.h5'
 
 # Data gathering conditions
@@ -55,7 +58,7 @@ generate_accuracy_results = True
 save_dog_model = False
 
 
-def network(seed, run_num, hp, num_seeded_units):
+def network(seed, run, hp, num_seeded_units):
     dog_train_labels, dog_train_images, dog_val_labels, dog_val_images = data.get_training_and_val_data('dog')
     dog_test_labels, dog_test_images = data.get_test_data("dog")
 
@@ -94,8 +97,7 @@ def network(seed, run_num, hp, num_seeded_units):
     # Callbacks:
     # Built-in tensorflow data gathering at each epoch
     tensor_board = TensorBoard(
-        log_dir="results/" + hp.experiment_name + "/run_" + str(run_num) + "/" + network_name + "/logs/seed_" + str(
-            seed))
+        log_dir=run.path + "/" + network_name + "/logs/seed_" + str(seed))
 
     early_stopping = library_extensions.EarlyStoppingWithMax(target=1.00, monitor='binary_accuracy', min_delta=0,
                                                              patience=0, verbose=1, mode='auto', baseline=0.99)
@@ -105,15 +107,13 @@ def network(seed, run_num, hp, num_seeded_units):
                                                            dog_val_labels, dog_test_images, dog_test_labels)
 
     # Training naive network
-    history = model.fit(dog_train_images, dog_train_labels, batch_size=hp.batch_size, epochs=hp.target_max_epochs,
-                        validation_data=(dog_val_images, dog_val_labels), shuffle=True,
-                        callbacks=[all_predictions, tensor_board])
+    model.fit(dog_train_images, dog_train_labels, batch_size=hp.batch_size, epochs=hp.target_max_epochs,
+              validation_data=(dog_val_images, dog_val_labels), shuffle=True,
+              callbacks=[all_predictions, tensor_board])
 
     # Save model and weights:
     if save_dog_model:
-        if not os.path.isdir(save_dir):
-            os.makedirs(save_dir)
-        model_path = os.path.join(save_dir, model_name)
+        model_path = create_path(save_dir, model_name)
         model.save(model_path)
         print('Saved trained model at %s ' % model_path)
 
@@ -132,16 +132,7 @@ def network(seed, run_num, hp, num_seeded_units):
 
     # Generate results history
     if generate_mcc_results or generate_accuracy_results:
-        generate_results = results_data.GenerateResults(model, network_name, all_predictions, history,
-                                                        hp.experiment_name, run_num, seed)
-        if generate_mcc_results:
-            generate_results.generate_train_data('mcc')
-            generate_results.generate_val_data('mcc')
-            generate_results.generate_test_data('mcc')
-        if generate_accuracy_results:
-            generate_results.generate_train_data('accuracy')
-            generate_results.generate_val_data('accuracy')
-            generate_results.generate_test_data('accuracy')
+        run.naive.update(seed, all_predictions)
 
 
 if __name__ == "__main__":

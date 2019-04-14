@@ -1,135 +1,103 @@
-import os
 import matplotlib.pyplot as plt
-import pandas as pd
+import seaborn
+seaborn.set()
 
+from run import Run
 from utils import create_path
 
 
-# All seeds of the performance measure for one network
-def single_network_performance(experiment_name, run_num, network_name, dataset_type, measure):
-    file_dir = create_path('results', experiment_name, f"run_{str(run_num)}", network_name, dataset_type)
-    csv = measure + ".csv"
-    file_path = create_path(file_dir, csv)
+__PNG_DPI__ = 150
 
-    if not os.path.isfile(file_path):
-        print("No csv file found at that path.")
-    else:
-        data = pd.read_csv(file_path, index_col=0)
-        plt.xlabel('epochs')
-        plt.ylabel(measure)
-        plt.title(network_name + " " + dataset_type + " results")
-        plt.ylim(0.0, 1.0)
-        plt.plot(data)
-        # plt.show()
-        plt.savefig(create_path(file_dir, f"{measure}.png"))
+
+def gen_graphs(run):
+    for d in ("test", "train", "val"):
+        naive_dataset = getattr(run.naive, d)
+        seeded_dataset = getattr(run.seeded, d)
+        for m in ("acc", "mcc"):
+            n = getattr(naive_dataset, m).df
+            s = getattr(seeded_dataset, m).df
+            single_network_performance(f"naive_{d}", m, naive_dataset.path, n)
+            single_network_performance(f"seeded_{d}", m, seeded_dataset.path, s)
+
+            single_network_performance(f"naive_average_{d}", m, naive_dataset.path, n.mean(axis=1))
+            single_network_performance(f"seeded_average_{d}", m, seeded_dataset.path, s.mean(axis=1))
+
+            compare_network_performance(d, m, run.path, s, n)
+            compare_average_network_performance(d, m, run.path, s.mean(axis=1), n.mean(axis=1))
+
+    for n in ("naive", "seeded"):
+        network = getattr(run, n)
+        data = {"test": {}, "train": {}, "val": {}}
+        for d in data.keys():
+            dataset = getattr(network, d)
+            for m in ("acc", "mcc"):
+                measure = getattr(dataset, m).df
+                data[d][m] = measure.mean(axis=1)
+
+        all_averaged_dataset_performance(n, m, network.path, data)
+
+
+# All seeds of the performance measure for one network
+def single_network_performance(title, measure, path, seeded_data):
+    plt.xlabel('epochs')
+    plt.ylabel(measure)
+    plt.title(title)
+    plt.ylim(0.0, 1.0)
+    plt.plot(seeded_data)
+    # plt.show()
+    plt.savefig(create_path(path, f"{measure}.png"), dpi=__PNG_DPI__)
+    plt.clf()
 
 
 # Comparison of performance measure for two networks for one dataset for all seeds
-def compare_network_performance(experiment_name, run_num, dataset_type, measure):
-    file_path_1 = "results/" + experiment_name + "/run_" + str(run_num) + "/seeded/" + dataset_type + "/" + \
-                  measure + ".csv"
-    file_path_2 = "results/" + experiment_name + "/run_" + str(run_num) + "/naive/" + dataset_type + "/" + \
-                  measure + ".csv"
-
-    if not os.path.isfile(file_path_1) and not os.path.isfile(file_path_2):
-        print("No csv file found at that path.")
-    else:
-        data_1 = pd.read_csv(file_path_1, index_col=0)
-        data_2 = pd.read_csv(file_path_2, index_col=0)
-        plt.figure(1)
-        plt.subplot(211)
-        plt.plot(data_1, label='seeded')
-        plt.xlabel('epochs')
-        plt.ylabel(measure)
-        plt.title("seeded " + dataset_type + " results")
-        plt.ylim(0.0, 1.0)
-        plt.subplot(212)
-        plt.plot(data_2, label='naive')
-        plt.xlabel('epochs')
-        plt.ylabel(measure)
-        plt.title("naive " + dataset_type + " results")
-        plt.ylim(0.0, 1.0)
-        plt.show()
-
-
-# Average performance measure for one network for one dataset
-def average_network_performance(experiment_name, run_num, network_name, dataset_type, measure):
-    file_path = "results/" + experiment_name + "/run_" + str(run_num) + "/" + network_name + "/" + dataset_type + \
-                "/" + measure + ".csv"
-
-    if not os.path.isfile(file_path):
-        print("No csv file found at that path.")
-    else:
-        data = pd.read_csv(file_path, index_col=0)
-        data_averaged = data.mean(axis=1)
-        plt.xlabel('epochs')
-        plt.ylabel("average " + measure)
-        plt.title(network_name + " averaged " + dataset_type + " results")
-        plt.ylim(0.0, 1.0)
-        plt.plot(data_averaged)
-        plt.show()
+def compare_network_performance(dataset, measure, path, seeded_data, naive_data):
+    plt.figure(1)
+    plt.subplot(211)
+    plt.plot(seeded_data, label='seeded')
+    plt.xlabel('epochs')
+    plt.ylabel(measure)
+    plt.title("seeded " + dataset)
+    plt.ylim(0.0, 1.0)
+    plt.subplot(212)
+    plt.plot(naive_data, label='naive')
+    plt.xlabel('epochs')
+    plt.ylabel(measure)
+    plt.title("naive " + dataset)
+    plt.ylim(0.0, 1.0)
+    # plt.show()
+    plt.savefig(create_path(path, f"compare_{dataset}_{measure}.png"), dpi=__PNG_DPI__)
+    plt.clf()
 
 
 # Comparison of average performance measure for two networks for one dataset
-def compare_average_network_performance(experiment_name, run_num, dataset_type, measure):
-    file_path_1 = "results/" + experiment_name + "/run_" + str(run_num) + "/seeded/" + dataset_type + "/" + \
-                  measure + ".csv"
-    file_path_2 = "results/" + experiment_name + "/run_" + str(run_num) + "/naive/" + dataset_type + "/" + \
-                  measure + ".csv"
-
-    if not os.path.isfile(file_path_1) and not os.path.isfile(file_path_2):
-        print("No csv file found at that path.")
-    else:
-        data_1 = pd.read_csv(file_path_1, index_col=0).mean(axis=1)
-        data_2 = pd.read_csv(file_path_2, index_col=0).mean(axis=1)
-
-        plt.plot(data_1, label='seeded')
-        plt.plot(data_2, label='naive')
-        plt.xlabel('epochs')
-        plt.ylabel(measure)
-        plt.title(dataset_type + "data averaged results")
-        plt.legend(loc='lower right')
-        plt.ylim(0.0, 1.0)
-        plt.show()
+def compare_average_network_performance(dataset, measure, path, seeded_data, naive_data):
+    plt.plot(seeded_data, label='seeded')
+    plt.plot(naive_data, label='naive')
+    plt.xlabel('epochs')
+    plt.ylabel(measure)
+    plt.title(dataset + ' ' + measure + " averaged")
+    plt.legend(loc='lower right')
+    plt.ylim(0.0, 1.0)
+    # plt.show()
+    plt.savefig(create_path(path, f"compare_average_{dataset}_{measure}.png"), dpi=__PNG_DPI__)
+    plt.clf()
 
 
 # Averaged performance measure across all datasets for one network
-def all_averaged_dataset_performance(experiment_name, run_num, network_name, measure):
-    file_dir = create_path("results", experiment_name, f"run_{str(run_num)}", network_name)
-    file_train = "train/" + measure + ".csv"
-    file_val = "val/" + measure + ".csv"
-    file_test = "test/" + measure + ".csv"
-
-    file_path_train = create_path(file_dir, file_train)
-    file_path_val = create_path(file_dir, file_val)
-    file_path_test = create_path(file_dir, file_test)
-
-    if not os.path.isfile(file_path_train) and not os.path.isfile(file_path_val) and not os.path.isfile(file_path_test):
-        print("No csv file found at that path.")
-    else:
-        data_train = pd.read_csv(file_path_train, index_col=0).mean(axis=1)
-        data_val = pd.read_csv(file_path_val, index_col=0).mean(axis=1)
-        data_test = pd.read_csv(file_path_test, index_col=0).mean(axis=1)
-
-        plt.plot(data_train, label='train')
-        plt.plot(data_val, label='val')
-        plt.plot(data_test, label='test')
-        plt.xlabel('epochs')
-        plt.ylabel(measure)
-        plt.title(network_name + " averaged results")
-        plt.legend(loc='lower right')
-        plt.ylim(0.0, 1.0)
-        # plt.show()
-        plt.savefig(create_path(file_dir, f"{measure}.png"))
+def all_averaged_dataset_performance(network_name, measure, path, data):
+    plt.plot(data["train"][measure], label='train')
+    plt.plot(data["val"][measure], label='val')
+    plt.plot(data["test"][measure], label='test')
+    plt.xlabel('epochs')
+    plt.ylabel(measure)
+    plt.title(network_name + " averaged results")
+    plt.legend(loc='lower right')
+    plt.ylim(0.0, 1.0)
+    # plt.show()
+    plt.savefig(create_path(path, f"all_datasets_{measure}.png"), dpi=__PNG_DPI__)
+    plt.clf()
 
 
 if __name__ == "__main__":
-    # single_network_performance("testing", 0, "seeded", "test", "mcc")
-
-    # compare_network_performance("testing", 0, "train", 'mcc')
-
-    # average_network_performance("testing", 0, "seeded", "train", "mcc")
-
-    # compare_average_network_performance("testing", 0, "train", 'mcc')
-
-    all_averaged_dataset_performance("testing", 0, "seeded", "mcc")
+    r = Run.restore("testing", 0)
+    gen_graphs(r)

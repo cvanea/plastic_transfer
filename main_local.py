@@ -1,13 +1,13 @@
-"""Script for automating runs."""
+"""Script for automating runs locally."""
 
 import transfer_networks, naive_network, hyperparameters as hp
+from run import Run
+from gen_graphs import gen_graphs
 
-# Hyperparamters and file naming.
 hp = hp.Hyperparameters()
 
-hp.experiment_name = "testing"
-hp.source_max_epochs = 30
-hp.target_max_epochs = 100
+hp.source_max_epochs = 2
+hp.target_max_epochs = 2
 hp.num_starting_units = 500
 hp.upper_threshold = 0.9
 hp.lower_threshold = 0.2
@@ -18,16 +18,23 @@ hp.conv_activation = 'relu'
 hp.loss_function = 'binary_crossentropy'
 
 num_runs = 1
-num_seeds = 2
+num_seeds = 1
 
 if __name__ == "__main__":
 
     # Generate num_seeds number of weight initialisation runs.
     for j in range(num_runs):
+        run = Run('testing3', j, hp)
+
         for i in range(num_seeds):
             print("Next seed = " + str(i))
 
             # Calls source network function
-            seeded_units = transfer_networks.network(i, j, hp)
+            seeded_units = transfer_networks.network(i, run, hp)
+            run.save(naive=False)
+
             # Calls naive network function
-            naive_network.network(i, j, hp, seeded_units)
+            naive_network.network(i, run, hp, seeded_units)
+            run.save(seeded=False)
+
+        gen_graphs(run)
