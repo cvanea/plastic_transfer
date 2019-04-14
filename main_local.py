@@ -6,8 +6,8 @@ from gen_graphs import gen_graphs
 
 hp = hp.Hyperparameters()
 
-hp.source_max_epochs = 2
-hp.target_max_epochs = 2
+hp.source_max_epochs = 1
+hp.target_max_epochs = 1
 hp.num_starting_units = 500
 hp.upper_threshold = 0.9
 hp.lower_threshold = 0.2
@@ -18,13 +18,13 @@ hp.conv_activation = 'relu'
 hp.loss_function = 'binary_crossentropy'
 
 num_runs = 1
-num_seeds = 1
+num_seeds = 3
 
 if __name__ == "__main__":
 
     # Generate num_seeds number of weight initialisation runs.
     for j in range(num_runs):
-        run = Run('testing3', j, hp)
+        run = Run('testing2', j, hp)
 
         for i in range(num_seeds):
             print("Next seed = " + str(i))

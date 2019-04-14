@@ -1,7 +1,7 @@
 """Changes to libraries."""
 
 from keras import Model, Sequential
-from keras.callbacks import Callback, EarlyStopping, History
+from keras.callbacks import Callback, EarlyStopping
 from kerassurgeon import utils
 from kerassurgeon.surgeon import Surgeon
 from keras import backend as k

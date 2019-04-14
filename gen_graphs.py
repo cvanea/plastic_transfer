@@ -16,11 +16,11 @@ def gen_graphs(run):
         for m in ("acc", "mcc"):
             n = getattr(naive_dataset, m).df
             s = getattr(seeded_dataset, m).df
-            single_network_performance(f"naive_{d}", m, naive_dataset.path, n)
-            single_network_performance(f"seeded_{d}", m, seeded_dataset.path, s)
+            single_network_performance(f"naive {d}", m, naive_dataset.path, n)
+            single_network_performance(f"seeded {d}", m, seeded_dataset.path, s)
 
-            single_network_performance(f"naive_average_{d}", m, naive_dataset.path, n.mean(axis=1))
-            single_network_performance(f"seeded_average_{d}", m, seeded_dataset.path, s.mean(axis=1))
+            single_network_performance(f"naive average {d}", m, naive_dataset.path, n.mean(axis=1))
+            single_network_performance(f"seeded average {d}", m, seeded_dataset.path, s.mean(axis=1))
 
             compare_network_performance(d, m, run.path, s, n)
             compare_average_network_performance(d, m, run.path, s.mean(axis=1), n.mean(axis=1))

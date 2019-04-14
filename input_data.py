@@ -16,6 +16,7 @@ def _get_original_dataset():
     (images_train, labels_train), (images_test, labels_test) = __RAW_DATA__
     return labels_train, images_train, labels_test, images_test
 
+
 # Balances data 50% chosen category, even split of others.
 def _balance_data(label_array, image_array, n_categories, labels_per_category, chosen_category):
     assert label_array.shape[0] == image_array.shape[0]
@@ -130,6 +131,7 @@ def get_imbal_labels(animal):
     imbal_train_labels[imbal_train_labels == chosen_category] = 1
 
     return imbal_train_labels, imbal_test_labels
+
 
 # Input images formatting
 def get_imbal_original_images():
