@@ -17,7 +17,7 @@ hp.batch_size = 200
 hp.conv_activation = 'relu'
 hp.loss_function = 'binary_crossentropy'
 
-run_0 = Run('testing3', 0, hp)
+run_0 = Run('testing_cloud', 0, hp)
 # run_1 = Run('testing3', 1, hp)
 # run_2 = Run('testing3', 2, hp)
 # run_1.hyperparameters.num_starting_units = 700
@@ -26,7 +26,7 @@ run_0 = Run('testing3', 0, hp)
 runs = [run_0]
 
 # num_runs = 1
-num_seeds = 2
+num_seeds = 1
 
 seeded = True
 naive = True
