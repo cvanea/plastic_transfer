@@ -50,11 +50,6 @@ cat_network_name = "cat"
 
 run = Run("testing", 1, hp)
 
-# Saving the weights
-save_dir = run.path + "/" + network_name
-dog_model_name = network_name + '_model_seed_' + str(seed) + '.h5'
-cat_model_name = cat_network_name + '_model_seed_' + str(seed) + '.h5'
-
 # Data gathering conditions
 generate_mcc_results = True
 generate_accuracy_results = True
@@ -122,6 +117,8 @@ def network(seed, run, hp):
 
     # Save model and weights:
     if save_cat_model:
+        save_dir = run.path + "/" + network_name
+        cat_model_name = cat_network_name + '_model_seed_' + str(seed) + '.h5'
         model_path = create_path(save_dir, cat_model_name)
         model.save(model_path)
         print('Saved trained model at %s ' % model_path)
@@ -232,6 +229,8 @@ def network(seed, run, hp):
 
     # Save model and weights:
     if save_dog_model:
+        save_dir = run.path + "/" + network_name
+        dog_model_name = network_name + '_model_seed_' + str(seed) + '.h5'
         model_path = create_path(save_dir, dog_model_name)
         model.save(model_path)
         print('Saved trained model at %s ' % model_path)

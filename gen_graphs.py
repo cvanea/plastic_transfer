@@ -9,24 +9,38 @@ from utils import create_path
 __PNG_DPI__ = 150
 
 
-def gen_graphs(run):
+def gen_graphs(run, seeded=True, naive=True):
+
     for d in ("test", "train", "val"):
-        naive_dataset = getattr(run.naive, d)
-        seeded_dataset = getattr(run.seeded, d)
+        if not naive:
+            seeded_dataset = getattr(run.seeded, d)
+        else:
+            naive_dataset = getattr(run.naive, d)
+            seeded_dataset = getattr(run.seeded, d)
         for m in ("acc", "mcc"):
-            n = getattr(naive_dataset, m).df
-            s = getattr(seeded_dataset, m).df
-            single_network_performance(f"naive {d}", m, naive_dataset.path, n)
-            single_network_performance(f"seeded {d}", m, seeded_dataset.path, s)
+            if not naive:
+                s = getattr(seeded_dataset, m).df
+                single_network_performance(f"seeded {d}", m, seeded_dataset.path, s)
+                single_network_performance(f"seeded average {d}", m, seeded_dataset.path, s.mean(axis=1))
+            elif not seeded:
+                n = getattr(naive_dataset, m).df
+                s = getattr(seeded_dataset, m).df
+                single_network_performance(f"naive {d}", m, naive_dataset.path, n)
+                single_network_performance(f"naive average {d}", f"{m} average", naive_dataset.path, n.mean(axis=1))
+                compare_network_performance(d, m, run.path, s, n)
+                compare_average_network_performance(d, m, run.path, s.mean(axis=1), n.mean(axis=1))
+            elif seeded and naive:
+                n = getattr(naive_dataset, m).df
+                s = getattr(seeded_dataset, m).df
+                single_network_performance(f"seeded {d}", m, seeded_dataset.path, s)
+                single_network_performance(f"seeded average {d}", f"{m} average", seeded_dataset.path, s.mean(axis=1))
+                single_network_performance(f"naive {d}", m, naive_dataset.path, n)
+                single_network_performance(f"naive average {d}", m, naive_dataset.path, n.mean(axis=1))
+                compare_network_performance(d, m, run.path, s, n)
+                compare_average_network_performance(d, m, run.path, s.mean(axis=1), n.mean(axis=1))
 
-            single_network_performance(f"naive average {d}", m, naive_dataset.path, n.mean(axis=1))
-            single_network_performance(f"seeded average {d}", m, seeded_dataset.path, s.mean(axis=1))
-
-            compare_network_performance(d, m, run.path, s, n)
-            compare_average_network_performance(d, m, run.path, s.mean(axis=1), n.mean(axis=1))
-
-    for n in ("naive", "seeded"):
-        network = getattr(run, n)
+    if seeded:
+        network = run.seeded
         data = {"test": {}, "train": {}, "val": {}}
         for d in data.keys():
             dataset = getattr(network, d)
@@ -34,7 +48,18 @@ def gen_graphs(run):
                 measure = getattr(dataset, m).df
                 data[d][m] = measure.mean(axis=1)
 
-        all_averaged_dataset_performance(n, m, network.path, data)
+        all_averaged_dataset_performance("seeded", m, network.path, data)
+
+    if naive:
+        network = run.naive
+        data = {"test": {}, "train": {}, "val": {}}
+        for d in data.keys():
+            dataset = getattr(network, d)
+            for m in ("acc", "mcc"):
+                measure = getattr(dataset, m).df
+                data[d][m] = measure.mean(axis=1)
+
+        all_averaged_dataset_performance("naive", m, network.path, data)
 
 
 # All seeds of the performance measure for one network

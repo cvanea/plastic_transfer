@@ -34,7 +34,7 @@ import hyperparameters as hp
 hp = hp.Hyperparameters()
 
 hp.target_max_epochs = 3
-hp.num_starting_units = 300
+hp.num_starting_units = 500
 hp.upper_threshold = 0.9
 hp.lower_threshold = 0.2
 hp.target_lr = 0.0001
@@ -48,9 +48,7 @@ network_name = "naive"
 
 run = Run("testing", 1, hp)
 
-# Saving the weights.
-save_dir = run.path + "/" + network_name
-model_name = network_name + '_model_seed_' + str(seed) + '.h5'
+num_seeded_units = 150
 
 # Data gathering conditions
 generate_mcc_results = True
@@ -111,8 +109,10 @@ def network(seed, run, hp, num_seeded_units):
               validation_data=(dog_val_images, dog_val_labels), shuffle=True,
               callbacks=[all_predictions, tensor_board])
 
-    # Save model and weights:
+    # Saving the weights.
     if save_dog_model:
+        save_dir = run.path + "/" + network_name
+        model_name = network_name + '_model_seed_' + str(seed) + '.h5'
         model_path = create_path(save_dir, model_name)
         model.save(model_path)
         print('Saved trained model at %s ' % model_path)
@@ -136,4 +136,4 @@ def network(seed, run, hp, num_seeded_units):
 
 
 if __name__ == "__main__":
-    network(seed, run_num, hp)
+    network(seed, run, hp, num_seeded_units)

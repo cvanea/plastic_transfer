@@ -15,6 +15,7 @@ class Run:
         self._save_hp()
         if seeded:
             self.seeded._save()
+            self._save_single_data()
         if naive:
             self.naive._save()
 
