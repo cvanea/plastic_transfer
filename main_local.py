@@ -16,6 +16,9 @@ hp.target_lr = 0.001
 hp.batch_size = 200
 hp.conv_activation = 'relu'
 hp.loss_function = 'binary_crossentropy'
+hp.pruning_method = 'activation'
+hp.source_animal = "cat"
+hp.target_animal = "dog"
 
 run_1 = Run('exp_8', 1, hp)
 
@@ -30,6 +33,9 @@ hp2.target_lr = 0.001
 hp2.batch_size = 200
 hp2.conv_activation = 'relu'
 hp2.loss_function = 'binary_crossentropy'
+hp2.pruning_method = 'activation'
+hp2.source_animal = "cat"
+hp2.target_animal = "dog"
 
 run_2 = Run('exp_8', 2, hp2)
 
@@ -44,6 +50,9 @@ hp3.target_lr = 0.001
 hp3.batch_size = 200
 hp3.conv_activation = 'relu'
 hp3.loss_function = 'binary_crossentropy'
+hp3.pruning_method = 'activation'
+hp3.source_animal = "cat"
+hp3.target_animal = "dog"
 
 run_3 = Run('exp_8', 3, hp3)
 
@@ -58,6 +67,9 @@ hp4.target_lr = 0.001
 hp4.batch_size = 200
 hp4.conv_activation = 'relu'
 hp4.loss_function = 'binary_crossentropy'
+hp4.pruning_method = 'activation'
+hp4.source_animal = "cat"
+hp4.target_animal = "dog"
 
 run_4 = Run('exp_8', 4, hp4)
 
@@ -72,6 +84,9 @@ hp5.target_lr = 0.001
 hp5.batch_size = 200
 hp5.conv_activation = 'relu'
 hp5.loss_function = 'binary_crossentropy'
+hp5.pruning_method = 'activation'
+hp5.source_animal = "cat"
+hp5.target_animal = "dog"
 
 run_5 = Run('exp_8', 5, hp5)
 
@@ -86,6 +101,9 @@ hp6.target_lr = 0.001
 hp6.batch_size = 200
 hp6.conv_activation = 'relu'
 hp6.loss_function = 'binary_crossentropy'
+hp6.pruning_method = 'activation'
+hp6.source_animal = "cat"
+hp6.target_animal = "dog"
 
 run_6 = Run('exp_8', 6, hp6)
 

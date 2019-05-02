@@ -2,9 +2,6 @@
 
 from numpy.random import seed
 
-from run import Run
-from utils import create_path
-
 seed(1)
 import os
 
@@ -22,41 +19,20 @@ import keras
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten, Conv2D, MaxPooling2D
 from keras.metrics import binary_accuracy
-from keras.initializers import glorot_uniform, he_uniform, he_normal
-from keras.callbacks import TensorBoard
-from sklearn.metrics import confusion_matrix, matthews_corrcoef
+from keras.initializers import glorot_uniform
 
 import input_data as data
 import library_extensions
-import hyperparameters as hp
-
-# Some hyperparameters for testing
-hp = hp.Hyperparameters()
-
-hp.target_max_epochs = 3
-hp.num_starting_units = 500
-hp.upper_threshold = 0.9
-hp.lower_threshold = 0.2
-hp.target_lr = 0.0001
-hp.batch_size = 200
-hp.conv_activation = 'relu'
-hp.loss_function = 'binary_crossentropy'
 
 run_num = 1
 seed = 0
 network_name = "naive"
 
-# run = Run("testing", 1, hp)
-
-num_seeded_units = 150
-
-# Data gathering conditions
-save_dog_model = False
-
 
 def network(seed, run, hp, num_seeded_units):
-    dog_train_labels, dog_train_images, dog_val_labels, dog_val_images = data.get_training_and_val_data('dog')
-    dog_test_labels, dog_test_images = data.get_test_data("dog")
+    dog_train_labels, dog_train_images, dog_val_labels, dog_val_images = data.get_training_and_val_data(
+        hp.target_animal)
+    dog_test_labels, dog_test_images = data.get_test_data(hp.target_animal)
 
     # Model
     model = Sequential()
@@ -91,46 +67,13 @@ def network(seed, run, hp, num_seeded_units):
     model.compile(loss=hp.loss_function, optimizer=opt, metrics=[binary_accuracy])
 
     # Callbacks:
-    # Built-in tensorflow data gathering at each epoch
-    tensor_board = TensorBoard(
-        log_dir=run.path + "/" + network_name + "/logs/seed_" + str(seed))
-
-    # early_stopping = library_extensions.EarlyStoppingWithMax(target=1.00, monitor='binary_accuracy', min_delta=0,
-    #                                                          patience=0, verbose=1, mode='auto', baseline=0.99)
-
     all_predictions = library_extensions.PredictionHistory(model, dog_train_images, dog_train_labels, dog_val_images,
                                                            dog_val_labels, dog_test_images, dog_test_labels)
 
     # Training naive network
     model.fit(dog_train_images, dog_train_labels, batch_size=hp.batch_size, epochs=hp.target_max_epochs,
               validation_data=(dog_val_images, dog_val_labels), shuffle=True,
-              callbacks=[all_predictions, tensor_board])
-
-    # Saving the weights.
-    if save_dog_model:
-        save_dir = run.path + "/" + network_name
-        model_name = network_name + '_model_seed_' + str(seed) + '.h5'
-        model_path = create_path(save_dir, model_name)
-        model.save(model_path)
-        print('Saved trained model at %s ' % model_path)
-
-    # Evaluate:
-    scores = model.evaluate(dog_test_images, dog_test_labels, verbose=1)
-    print('Test loss:', scores[0])
-    print('Test accuracy:', scores[1])
-
-    predictions = model.predict_classes(dog_test_images)
-
-    print("Naive Dogs Evaluation:")
-    print("Matthews Correlation Coefficient: " + str(matthews_corrcoef(dog_test_labels, predictions)))
-
-    print("True Negative, False Positive, False Negative, True Positive:")
-    print(confusion_matrix(dog_test_labels, predictions).ravel())
+              callbacks=[all_predictions])
 
     # Generate results history
     run.naive.update(seed, all_predictions)
-
-
-if __name__ == "__main__":
-    pass
-    # network(seed, run, hp, num_seeded_units)
