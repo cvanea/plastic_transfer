@@ -17,35 +17,6 @@ def _get_original_dataset():
     return labels_train, images_train, labels_test, images_test
 
 
-# Balances data 50% chosen category, even split of others.
-def _balance_data(label_array, image_array, n_categories, labels_per_category, chosen_category):
-    assert label_array.shape[0] == image_array.shape[0]
-
-    labels = []
-    images = []
-
-    n_other_labels = n_categories - 1
-    n_chosen = labels_per_category
-    n_other = labels_per_category / n_other_labels
-
-    while not n_other.is_integer():
-        n_chosen -= 1
-        n_other = n_chosen / n_other_labels
-
-    c = defaultdict(int)
-
-    for i, label in enumerate(label_array):
-        l = label[0]
-        if (l == chosen_category and c[l] < n_chosen) or (c[l] < n_other):
-            labels.append(label)
-            images.append(image_array[i])
-            c[l] += 1
-        else:
-            continue
-
-    return np.array(labels), np.array(images)
-
-
 # Balanced training data. Balanced validation data at 20% subset of training data
 def get_training_and_val_data(animal):
     chosen_category = None
@@ -53,6 +24,10 @@ def get_training_and_val_data(animal):
         chosen_category = 3
     elif animal == "dog":
         chosen_category = 5
+    elif animal == "horse":
+        chosen_category = 7
+    elif animal == "ship":
+        chosen_category = 8
 
     labels_train, images_train, labels_test, images_test = _get_original_dataset()
     filtered_labels, filtered_images = _balance_data(labels_train, images_train, 10, 5000, chosen_category)
@@ -85,10 +60,14 @@ def get_training_and_val_data(animal):
 # Balanced test data
 def get_test_data(animal):
     chosen_category = None
-    if animal == 'cat':
+    if animal == "cat":
         chosen_category = 3
-    elif animal == 'dog':
+    elif animal == "dog":
         chosen_category = 5
+    elif animal == "horse":
+        chosen_category = 7
+    elif animal == "ship":
+        chosen_category = 8
 
     labels_train, images_train, labels_test, images_test = _get_original_dataset()
     test_filtered_labels, test_filtered_images = _balance_data(labels_test, images_test, 10, 1000, chosen_category)
@@ -112,10 +91,14 @@ def get_test_data(animal):
 # Dogs imbalanced testing data
 def get_imbal_labels(animal):
     chosen_category = None
-    if animal == 'cat':
+    if animal == "cat":
         chosen_category = 3
-    elif animal == 'dog':
+    elif animal == "dog":
         chosen_category = 5
+    elif animal == "horse":
+        chosen_category = 7
+    elif animal == "ship":
+        chosen_category = 8
 
     labels_train, images_train, labels_test, images_test = _get_original_dataset()
     imbal_test_labels = np.empty(labels_test.shape)
@@ -142,3 +125,47 @@ def get_imbal_original_images():
     images_test /= 255
 
     return images_train, images_test
+
+
+# Balances data 50% chosen category, even split of others.
+def _balance_data(label_array, image_array, n_categories, labels_per_category, chosen_category):
+    assert label_array.shape[0] == image_array.shape[0]
+
+    labels = []
+    images = []
+
+    n_other_labels = n_categories - 1
+    n_chosen = labels_per_category
+    n_other = labels_per_category / n_other_labels
+
+    while not n_other.is_integer():
+        n_chosen -= 1
+        n_other = n_chosen / n_other_labels
+
+    c = defaultdict(int)
+
+    for i, label in enumerate(label_array):
+        l = label[0]
+        if (l == chosen_category and c[l] < n_chosen) or (c[l] < n_other):
+            labels.append(label)
+            images.append(image_array[i])
+            c[l] += 1
+        else:
+            continue
+
+    return np.array(labels), np.array(images)
+
+
+def get_category_images(label_array, image_array, chosen_category):
+    images = []
+    c = defaultdict(int)
+
+    for i, label in enumerate(label_array):
+        l = label[0]
+        if (l == chosen_category):
+            images.append(image_array[i])
+            c[l] += 1
+        else:
+            continue
+
+    return np.array(images)

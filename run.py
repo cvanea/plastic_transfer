@@ -6,8 +6,10 @@ from hyperparameters import Hyperparameters
 class Run:
     def __init__(self, experiment_name, run_num, hyperparameters=None):
         self.hyperparameters = hyperparameters
-        self.path = create_path('results', experiment_name, f"run_{run_num}")
+        self.path = create_path('results', experiment_name, "run_{}".format(str(run_num)))
         self.single_data = None
+        self.apoz_data = None
+        self.activation_data = {}
         self.seeded = NetworkType(create_path(self.path, 'seeded'))
         self.naive = NetworkType(create_path(self.path, 'naive'))
 
@@ -16,14 +18,18 @@ class Run:
         if seeded:
             self.seeded._save()
             self._save_single_data()
+            self._save_apoz_data()
+            self._save_activation_data()
         if naive:
             self.naive._save()
 
     @staticmethod
-    def restore(experiment_name, run_num, seeded=True, naive=True):
+    def restore(experiment_name, run_num, num_seeds, seeded=True, naive=True):
         r = Run(experiment_name, run_num)
         r._restore_hp()
         r._restore_single_data()
+        r._restore_apoz_data()
+        r._restore_activation_data(num_seeds)
         if seeded:
             r.seeded._restore()
         if naive:
@@ -48,6 +54,30 @@ class Run:
 
     def _restore_single_data(self):
         self.single_data = pd.read_csv(create_path(self.path, "seeded_units_stopped_epoch.csv"), index_col=0)
+
+    def update_apoz_data(self, seed, apoz_data):
+        if self.apoz_data is None:
+            self.apoz_data = pd.DataFrame(apoz_data, columns=[str(seed)])
+        else:
+            self.apoz_data[str(seed)] = apoz_data
+
+    def _save_apoz_data(self):
+        self.apoz_data.to_csv(create_path(self.path, "apoz_data.csv"))
+
+    def _restore_apoz_data(self):
+        self.apoz_data = pd.read_csv(create_path(self.path, "apoz_data.csv"), index_col=0)
+
+    def update_activation_data(self, seed, activations):
+        self.activation_data[str(seed)] = pd.DataFrame(activations)
+
+    def _save_activation_data(self):
+        for key in self.activation_data:
+            self.activation_data[key].to_csv(create_path(self.path, "seed_{}_activations.csv".format(key)))
+
+    def _restore_activation_data(self, num_seeds):
+        for seed in range(num_seeds):
+            self.activation_data[str(seed)] = pd.read_csv(
+                create_path(self.path, "seed_{}_activations.csv".format(str(seed))), index_col=0)
 
 
 class NetworkType:

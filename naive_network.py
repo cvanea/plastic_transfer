@@ -22,7 +22,7 @@ import keras
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten, Conv2D, MaxPooling2D
 from keras.metrics import binary_accuracy
-from keras.initializers import glorot_uniform
+from keras.initializers import glorot_uniform, he_uniform, he_normal
 from keras.callbacks import TensorBoard
 from sklearn.metrics import confusion_matrix, matthews_corrcoef
 
@@ -46,13 +46,11 @@ run_num = 1
 seed = 0
 network_name = "naive"
 
-run = Run("testing", 1, hp)
+# run = Run("testing", 1, hp)
 
 num_seeded_units = 150
 
 # Data gathering conditions
-generate_mcc_results = True
-generate_accuracy_results = True
 save_dog_model = False
 
 
@@ -97,11 +95,10 @@ def network(seed, run, hp, num_seeded_units):
     tensor_board = TensorBoard(
         log_dir=run.path + "/" + network_name + "/logs/seed_" + str(seed))
 
-    early_stopping = library_extensions.EarlyStoppingWithMax(target=1.00, monitor='binary_accuracy', min_delta=0,
-                                                             patience=0, verbose=1, mode='auto', baseline=0.99)
+    # early_stopping = library_extensions.EarlyStoppingWithMax(target=1.00, monitor='binary_accuracy', min_delta=0,
+    #                                                          patience=0, verbose=1, mode='auto', baseline=0.99)
 
-    all_predictions = library_extensions.PredictionHistory(generate_mcc_results, generate_accuracy_results, model,
-                                                           dog_train_images, dog_train_labels, dog_val_images,
+    all_predictions = library_extensions.PredictionHistory(model, dog_train_images, dog_train_labels, dog_val_images,
                                                            dog_val_labels, dog_test_images, dog_test_labels)
 
     # Training naive network
@@ -131,9 +128,9 @@ def network(seed, run, hp, num_seeded_units):
     print(confusion_matrix(dog_test_labels, predictions).ravel())
 
     # Generate results history
-    if generate_mcc_results or generate_accuracy_results:
-        run.naive.update(seed, all_predictions)
+    run.naive.update(seed, all_predictions)
 
 
 if __name__ == "__main__":
-    network(seed, run, hp, num_seeded_units)
+    pass
+    # network(seed, run, hp, num_seeded_units)

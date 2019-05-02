@@ -19,7 +19,7 @@ import numpy as np
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten, Conv2D, MaxPooling2D
 from keras.metrics import binary_accuracy
-from keras.initializers import glorot_uniform
+from keras.initializers import glorot_uniform, he_uniform, he_normal
 from keras.callbacks import TensorBoard
 from sklearn.metrics import confusion_matrix, matthews_corrcoef
 
@@ -27,6 +27,7 @@ import library_extensions
 from utils import create_path
 import input_data
 import hyperparameters as hp
+import utils
 from run import Run
 
 # Some hyperparameters for testing
@@ -48,11 +49,9 @@ seed = 0
 network_name = "seeded"
 cat_network_name = "cat"
 
-run = Run("testing", 1, hp)
+# run = Run("testing", 1, hp)
 
 # Data gathering conditions
-generate_mcc_results = True
-generate_accuracy_results = True
 generate_cat_train_results = False
 save_cat_model = False
 save_dog_model = False
@@ -62,6 +61,10 @@ def network(seed, run, hp):
     cat_train_labels, cat_train_images, cat_val_labels, cat_val_images = input_data.get_training_and_val_data('cat')
     dog_train_labels, dog_train_images, dog_val_labels, dog_val_images = input_data.get_training_and_val_data('dog')
     dog_test_labels, dog_test_images = input_data.get_test_data('dog')
+    all_cat_images = input_data.get_category_images(cat_train_labels, cat_train_images, 1)
+    all_non_cat_images = input_data.get_category_images(cat_train_labels, cat_train_images, 0)
+    all_dog_images = input_data.get_category_images(dog_train_labels, dog_train_images, 1)
+    all_non_dog_images = input_data.get_category_images(dog_train_labels, dog_train_images, 0)
 
     # Model
     model = Sequential()
@@ -101,13 +104,13 @@ def network(seed, run, hp):
         log_dir=run.path + "/" + cat_network_name + "/logs/seed_" + str(seed))
 
     # Stopping point value
-    early_stopping = library_extensions.EarlyStoppingWithMax(target=0.74, monitor='val_binary_accuracy', min_delta=0,
+    early_stopping = library_extensions.EarlyStoppingWithMax(target=1.1, monitor='val_binary_accuracy', min_delta=0,
                                                              patience=0, verbose=1, mode='auto', baseline=0.68)
 
     # Training source network
     model.fit(cat_train_images, cat_train_labels, batch_size=hp.batch_size, epochs=hp.source_max_epochs,
               validation_data=(dog_train_images, dog_train_labels), shuffle=True,
-              callbacks=[tensor_board_cats, early_stopping])
+              callbacks=[tensor_board_cats])
 
     # Save stopped epoch variable
     if early_stopping.stopped_epoch == 0:
@@ -156,8 +159,12 @@ def network(seed, run, hp):
     # APoZ values
     layer = model.get_layer("fc_layer")
 
-    apoz = library_extensions.get_apoz(model, layer, cat_train_images)
+    activations = utils.get_activations(model, layer, all_dog_images)
+    activations_mean = np.mean(activations, axis=0)
+    activation_discard_indices = \
+        np.where((activations_mean <= hp.lower_threshold) | (activations_mean >= hp.upper_threshold))[0]
 
+    apoz = library_extensions.get_apoz(model, layer, all_cat_images)
     discard_indices = np.where((apoz <= hp.lower_threshold) | (apoz >= hp.upper_threshold))[0]
 
     # Creating the new target model.
@@ -167,7 +174,7 @@ def network(seed, run, hp):
         return my_surgeon.operate()
 
     # New model ready for training on dogs
-    dogs_model = my_delete_channels(model, layer, discard_indices, node_indices=None)
+    dogs_model = my_delete_channels(model, layer, activation_discard_indices, node_indices=None)
 
     print(dogs_model.summary())
 
@@ -182,11 +189,10 @@ def network(seed, run, hp):
     dogs_tensor_board = TensorBoard(
         log_dir=run.path + "/" + network_name + "/logs/seed_" + str(seed))
 
-    dogs_early_stopping = library_extensions.EarlyStoppingWithMax(target=1.00, monitor='binary_accuracy', min_delta=0,
-                                                                  patience=0, verbose=1, mode='auto', baseline=0.99)
+    # dogs_early_stopping = library_extensions.EarlyStoppingWithMax(target=1.00, monitor='binary_accuracy', min_delta=0,
+    #                                                               patience=0, verbose=1, mode='auto', baseline=0.99)
 
-    all_dog_predictions = library_extensions.PredictionHistory(generate_mcc_results, generate_accuracy_results,
-                                                               model, dog_train_images, dog_train_labels,
+    all_dog_predictions = library_extensions.PredictionHistory(model, dog_train_images, dog_train_labels,
                                                                dog_val_images, dog_val_labels, dog_test_images,
                                                                dog_test_labels)
 
@@ -223,9 +229,10 @@ def network(seed, run, hp):
     num_seeded_units = dogs_model.get_layer('fc_layer').get_config()['units']
 
     # Generate results
-    if generate_mcc_results or generate_accuracy_results:
-        run.seeded.update(seed, all_dog_predictions)
-        run.update_single_data(seed, num_seeded_units, cat_epoch_end)
+    run.seeded.update(seed, all_dog_predictions)
+    run.update_single_data(seed, num_seeded_units, cat_epoch_end)
+    run.update_apoz_data(seed, apoz)
+    run.update_activation_data(seed, activations)
 
     # Save model and weights:
     if save_dog_model:
@@ -239,4 +246,5 @@ def network(seed, run, hp):
 
 
 if __name__ == "__main__":
-    network(seed, run, hp)
+    pass
+    # network(seed, run, hp)

@@ -1,4 +1,3 @@
-import os
 import unittest
 from unittest.mock import MagicMock
 
@@ -6,7 +5,9 @@ import numpy as np
 
 from run import Run
 
-from input_data import _balance_data
+from input_data import _balance_data, get_category_images
+
+from library_extensions import get_apoz
 
 
 class TestInputData(unittest.TestCase):
@@ -28,6 +29,14 @@ class TestInputData(unittest.TestCase):
         self.assertTrue(np.array_equal(computed_labels, expected_labels))
         self.assertTrue(np.array_equal(computed_images, expected_images))
 
+    def test_get_positive_images(self):
+        label_array = np.array([[1], [1], [2], [3], [2], [1], [1]])
+        image_array = np.array([1, 2, 3, 4, 5, 6, 7])
+        expected_images = np.array([1, 2, 6, 7])
+
+        computed_images = get_category_images(label_array, image_array, 1)
+
+        self.assertTrue(np.array_equal(computed_images, expected_images))
 
 class TestRun(unittest.TestCase):
     def tearDown(self):
@@ -77,10 +86,6 @@ class TestRun(unittest.TestCase):
         self.assertListEqual(m.val['mcc'], list(r.seeded.val.mcc.df["3"].values))
         self.assertListEqual(m2.val['mcc'], list(r.seeded.val.mcc.df["4"].values))
 
-
-        # os.path.di
-        #
-        #
-        # r2 = Run.restore("unit_test", 0)
-        #
-        # r = r2
+# class TestApoz(unittest.TestCase):
+#     def test_get_apoz(self):
+#         m = MagicMock()
