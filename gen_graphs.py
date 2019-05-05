@@ -2,6 +2,7 @@ import pandas as pd
 
 import matplotlib.pyplot as plt
 import seaborn
+from sklearn.preprocessing import minmax_scale
 
 seaborn.set()
 
@@ -12,51 +13,63 @@ import numpy as np
 __PNG_DPI__ = 150
 
 
-def gen_graphs(run, seeded=True, naive=True):
+def gen_graphs(run, target=True, naive=True, save_opp=False):
     for d in ("test", "train", "val"):
         if not naive:
-            seeded_dataset = getattr(run.seeded, d)
+            target_dataset = getattr(run.target, d)
         else:
             naive_dataset = getattr(run.naive, d)
-            seeded_dataset = getattr(run.seeded, d)
+            target_dataset = getattr(run.target, d)
         for m in ("acc", "mcc"):
             if not naive:
-                s = getattr(seeded_dataset, m).df
-                single_network_performance("seeded {}".format(d), m, seeded_dataset.path, s)
-                single_network_performance("seeded average {}".format(d), m, seeded_dataset.path, s.mean(axis=1))
-            elif not seeded:
+                s = getattr(target_dataset, m).df
+                single_network_performance("target {}".format(d), m, target_dataset.path, s)
+                single_network_performance("target average {}".format(d), m, target_dataset.path, s.mean(axis=1))
+            elif not target:
                 n = getattr(naive_dataset, m).df
-                s = getattr(seeded_dataset, m).df
+                s = getattr(target_dataset, m).df
                 single_network_performance("naive {}".format(d), m, naive_dataset.path, n)
                 single_network_performance("naive average {}".format(d), "{} average".format(m), naive_dataset.path,
                                            n.mean(axis=1))
                 compare_network_performance(d, m, run.path, s, n)
-                compare_average_network_performance(d, m, run.path, s.mean(axis=1), n.mean(axis=1))
-            elif seeded and naive:
+                compare_average_network_performance(d, m, run.path, s.mean(axis=1), n.mean(axis=1), "target", "naive")
+            elif target and naive:
                 n = getattr(naive_dataset, m).df
-                s = getattr(seeded_dataset, m).df
-                single_network_performance("seeded {}".format(d), m, seeded_dataset.path, s)
-                single_network_performance("seeded average {}".format(d), "{} average".format(m), seeded_dataset.path,
+                s = getattr(target_dataset, m).df
+                single_network_performance("target {}".format(d), m, target_dataset.path, s)
+                single_network_performance("target average {}".format(d), "{} average".format(m), target_dataset.path,
                                            s.mean(axis=1))
                 single_network_performance("naive {}".format(d), m, naive_dataset.path, n)
                 single_network_performance("naive average {}".format(d), m, naive_dataset.path, n.mean(axis=1))
                 compare_network_performance(d, m, run.path, s, n)
-                compare_average_network_performance(d, m, run.path, s.mean(axis=1), n.mean(axis=1))
+                compare_average_network_performance(d, m, run.path, s.mean(axis=1), n.mean(axis=1), "target", "naive")
 
-    if seeded:
-        network = run.seeded
+
+    if target:
+        network = run.target
         data = {"test": {}, "train": {}, "val": {}}
         for d in data.keys():
             dataset = getattr(network, d)
-            for m in ("acc", "mcc"):
+            for m in ("acc", "mcc", "opp_mcc"):
+                if m == "opp_mcc" and not save_opp:
+                    continue
                 measure = getattr(dataset, m).df
                 data[d][m] = measure.mean(axis=1)
 
-        all_averaged_dataset_performance("seeded", "acc", network.path, data)
-        all_averaged_dataset_performance("seeded", "mcc", network.path, data)
+            if save_opp:
+                compare_average_network_performance(d, "mcc", run.path, data[d]["mcc"], data[d]["opp_mcc"], "target",
+                                                    "source")
 
-        activation_mean_histogram(run.path, run.activation_data)
+        all_averaged_dataset_performance("target", "acc", network.path, data)
+        all_averaged_dataset_performance("target", "mcc", network.path, data)
+
+        # activation_mean_histogram(run.path, run.activation_data)
         all_activation_mean_histogram(run.path, run.activation_data)
+
+        # scatter_std_mean_activation(run.path, run.activation_data)
+        all_scatter_std_mean_activation(run.path, run.activation_data)
+
+        all_normalised_maru_histogram(run.path, run.activation_data)
 
     if naive:
         network = run.naive
@@ -70,30 +83,42 @@ def gen_graphs(run, seeded=True, naive=True):
         all_averaged_dataset_performance("naive", "acc", network.path, data)
         all_averaged_dataset_performance("naive", "mcc", network.path, data)
 
+    if save_opp:
+        network = run.source
+        data = {"test": {}, "train": {}, "val": {}}
+        for d in data.keys():
+            dataset = getattr(network, d)
+            for m in ("mcc", 'opp_mcc'):
+                measure = getattr(dataset, m).df
+                data[d][m] = measure.mean(axis=1)
+
+            compare_average_network_performance(d, "mcc", network.path, data[d]["mcc"], data[d]["opp_mcc"], "target",
+                                                "source")
+
 
 # All seeds of the performance measure for one network
-def single_network_performance(title, measure, path, seeded_data):
+def single_network_performance(title, measure, path, data):
     plt.xlabel('epochs')
     plt.ylabel(measure)
     plt.title(title)
     plt.ylim(0.0, 1.0)
-    plt.plot(seeded_data)
+    plt.plot(data)
     # plt.show()
     plt.savefig(create_path(path, "{}.png".format(measure)), dpi=__PNG_DPI__)
     plt.clf()
 
 
 # Comparison of performance measure for two networks for one dataset for all seeds
-def compare_network_performance(dataset, measure, path, seeded_data, naive_data):
+def compare_network_performance(dataset, measure, path, first_data, second_data):
     plt.figure(1)
     plt.subplot(211)
-    plt.plot(seeded_data, label='seeded')
+    plt.plot(first_data, label='target')
     plt.xlabel('epochs')
     plt.ylabel(measure)
-    plt.title("seeded " + dataset)
+    plt.title("target " + dataset)
     plt.ylim(0.0, 1.0)
     plt.subplot(212)
-    plt.plot(naive_data, label='naive')
+    plt.plot(second_data, label='naive')
     plt.xlabel('epochs')
     plt.ylabel(measure)
     plt.title("naive " + dataset)
@@ -104,16 +129,17 @@ def compare_network_performance(dataset, measure, path, seeded_data, naive_data)
 
 
 # Comparison of average performance measure for two networks for one dataset
-def compare_average_network_performance(dataset, measure, path, seeded_data, naive_data):
-    plt.plot(seeded_data, label='seeded')
-    plt.plot(naive_data, label='naive')
+def compare_average_network_performance(dataset, measure, path, first_data, second_data, first_label, second_label):
+    plt.plot(first_data, label=first_label)
+    plt.plot(second_data, label=second_label)
     plt.xlabel('epochs')
     plt.ylabel(measure)
     plt.title(dataset + ' ' + measure + " averaged")
     plt.legend(loc='lower right')
     plt.ylim(0.0, 1.0)
     # plt.show()
-    plt.savefig(create_path(path, "compare_average_{}_{}.png".format(dataset, measure)), dpi=__PNG_DPI__)
+    plt.savefig(create_path(path, "compare_average_{}_{}_{}.png".format(dataset, measure, second_label)),
+                dpi=__PNG_DPI__)
     plt.clf()
 
 
@@ -133,9 +159,10 @@ def all_averaged_dataset_performance(network_name, measure, path, data):
 
 
 def activation_mean_histogram(path, activation_data):
+    path = create_path(path, "activations")
     for seed in activation_data:
         data = activation_data[seed]
-        mean_data = np.mean(data.values, axis=0)
+        mean_data = np.mean(data, axis=0)
 
         n, bins, patches = plt.hist(mean_data, 20, range=(0.0, 1.0))
         plt.ylabel('number of neurons')
@@ -151,7 +178,7 @@ def all_activation_mean_histogram(path, activation_data):
     activation_data_list = []
     for seed in activation_data:
         data = activation_data[seed]
-        mean_data = np.mean(data.values, axis=0)
+        mean_data = np.mean(data, axis=0)
         activation_data_list.append(mean_data)
 
     n, bins, patches = plt.hist(activation_data_list, 20, range=(0.0, 1.0), label=activation_data.keys(), rwidth=1.0,
@@ -159,10 +186,70 @@ def all_activation_mean_histogram(path, activation_data):
     plt.ylabel('number of neurons')
     plt.xlabel('mean activation')
     plt.title('mean activation for all seeds')
-    plt.legend(loc='upper right')
-    plt.ylim(0, 60)
+    # plt.legend(loc='upper right')
+    # plt.ylim(0, 40)
     # plt.show()
+    path = create_path(path, "activations")
     plt.savefig(create_path(path, "all_seeds_mean_act.png"), dpi=__PNG_DPI__)
+    plt.clf()
+
+
+def scatter_std_mean_activation(path, activation_data):
+    path = create_path(path, "activations")
+    for seed in activation_data:
+        data = activation_data[seed]
+        mean_data = np.mean(data, axis=0)
+        std_data = np.std(data, axis=0)
+
+        plt.scatter(mean_data, std_data)
+        plt.xlabel('mean activation')
+        plt.ylabel('std of activation')
+        plt.title('mean vs std for seed {}'.format(seed))
+        # plt.ylim(0.0, 4.0)
+        # plt.xlim(0.0, 3.0)
+        # plt.show()
+        plt.savefig(create_path(path, "seed_{}_mean_std_act.png".format(seed)), dpi=__PNG_DPI__)
+        plt.clf()
+
+def all_scatter_std_mean_activation(path, activation_data):
+    for seed in activation_data:
+        data = activation_data[seed]
+        mean_data = np.mean(data, axis=0)
+        std_data = np.std(data, axis=0)
+        plt.scatter(mean_data, std_data, label=seed)
+
+    plt.xlabel('mean activation')
+    plt.ylabel('std of activation')
+    plt.title('mean vs std for all seeds')
+    # plt.ylim(0.0, 4.0)
+    # plt.xlim(0.0, 8.0)
+    # plt.legend(loc='upper right')
+    # plt.show()
+    path = create_path(path, "activations")
+    plt.savefig(create_path(path, "all_seed_mean_std_act.png"), dpi=__PNG_DPI__)
+    plt.clf()
+
+
+def all_normalised_maru_histogram(path, activation_data):
+    normalised_maru_data_list = []
+    for seed in activation_data:
+        data = activation_data[seed]
+        mean_data = np.mean(data, axis=0)
+        std_data = np.std(data, axis=0)
+        maru_data = np.divide(mean_data, std_data, out=np.zeros_like(mean_data), where=std_data != 0)
+        normalised_maru = minmax_scale(maru_data, feature_range=(0, 1))
+        normalised_maru_data_list.append(normalised_maru)
+
+    n, bins, patches = plt.hist(normalised_maru_data_list, 20, range=(0.0, 1.0), label=activation_data.keys(), rwidth=1.0,
+                                linewidth=0)
+    plt.ylabel('number of neurons')
+    plt.xlabel('maru value')
+    plt.title('normalised maru value for all seeds')
+    # plt.legend(loc='upper right')
+    # plt.ylim(0, 60)
+    # plt.show()
+    path = create_path(path, "activations")
+    plt.savefig(create_path(path, "all_normal_maru.png"), dpi=__PNG_DPI__)
     plt.clf()
 
 
@@ -174,4 +261,6 @@ if __name__ == "__main__":
     data['0'] = pd.read_csv('results_cloud/results/exp_7/run_1/seed_0_activations.csv', index_col=0)
     data['1'] = pd.read_csv('results_cloud/results/exp_7/run_1/seed_1_activations.csv', index_col=0)
     data['2'] = pd.read_csv('results_cloud/results/exp_7/run_1/seed_2_activations.csv', index_col=0)
-    all_activation_mean_histogram('results_cloud/results/exp_7/run_1/seed_0_mean_act.png', data)
+    # all_activation_mean_histogram('results_cloud/results/exp_7/run_1/', data)
+    # all_scatter_std_mean_activation('results_cloud/results/exp_7/run_1/', data)
+    all_normalised_maru_histogram('results_cloud/results/exp_7/run_1/', data)

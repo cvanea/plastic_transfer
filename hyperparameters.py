@@ -1,5 +1,3 @@
-# TODO: See if keras has a built-in way to save model hyperparameters.
-# TODO: Find a way to store the exact git commit hash.
 import pandas as pd
 from utils import create_path
 
@@ -19,6 +17,8 @@ class Hyperparameters:
         self.pruning_method = None
         self.source_animal = None
         self.target_animal = None
+        self.pruning_dataset = None
+        self.save_opp = None
 
     def to_csv(self, path):
         d = {"source_max_epochs": [self.source_max_epochs], "target_max_epochs": [self.target_max_epochs],
@@ -26,7 +26,8 @@ class Hyperparameters:
              "lower_threshold": [self.lower_threshold], "source_lr": [self.source_lr], "target_lr": [self.target_lr],
              "batch_size": [self.batch_size], "conv_activation": [self.conv_activation],
              "loss_function": [self.loss_function], "pruning_method": [self.pruning_method],
-             "source_animal": [self.source_animal], "target_animal": [self.target_animal]}
+             "source_animal": [self.source_animal], "target_animal": [self.target_animal],
+             "pruning_dataset": [self.pruning_dataset], "save_opp": [self.save_opp]}
         hyperparams = pd.DataFrame(data=d)
 
         file_path = create_path(path, 'params.csv')
@@ -52,5 +53,7 @@ class Hyperparameters:
         m.pruning_method = dict_hp_data["pruning_method"]
         m.source_animal = dict_hp_data["source_animal"]
         m.target_animal = dict_hp_data["target_animal"]
+        m.pruning_dataset = dict_hp_data["pruning_dataset"]
+        m.save_opp = dict_hp_data["save_opp"]
 
         return m

@@ -16,18 +16,34 @@ def _get_original_dataset():
     (images_train, labels_train), (images_test, labels_test) = __RAW_DATA__
     return labels_train, images_train, labels_test, images_test
 
+def _get_category_by_name(category_name):
+    if category_name == "plane":
+        return 0
+    elif category_name == "car":
+        return 1
+    elif category_name == "bird":
+        return 2
+    elif category_name == "cat":
+        return 3
+    elif category_name == "deer":
+        return 4
+    elif category_name == "dog":
+        return 5
+    elif category_name == "frog":
+        return 6
+    elif category_name == "horse":
+        return 7
+    elif category_name == "ship":
+        return 8
+    elif category_name == "truck":
+        return 9
+    else:
+        print("No category with name {}".format(category_name))
+
 
 # Balanced training data. Balanced validation data at 20% subset of training data
 def get_training_and_val_data(animal):
-    chosen_category = None
-    if animal == "cat":
-        chosen_category = 3
-    elif animal == "dog":
-        chosen_category = 5
-    elif animal == "horse":
-        chosen_category = 7
-    elif animal == "ship":
-        chosen_category = 8
+    chosen_category = _get_category_by_name(animal)
 
     labels_train, images_train, labels_test, images_test = _get_original_dataset()
     filtered_labels, filtered_images = _balance_data(labels_train, images_train, 10, 5000, chosen_category)
@@ -59,15 +75,7 @@ def get_training_and_val_data(animal):
 
 # Balanced test data
 def get_test_data(animal):
-    chosen_category = None
-    if animal == "cat":
-        chosen_category = 3
-    elif animal == "dog":
-        chosen_category = 5
-    elif animal == "horse":
-        chosen_category = 7
-    elif animal == "ship":
-        chosen_category = 8
+    chosen_category = _get_category_by_name(animal)
 
     labels_train, images_train, labels_test, images_test = _get_original_dataset()
     test_filtered_labels, test_filtered_images = _balance_data(labels_test, images_test, 10, 1000, chosen_category)
@@ -90,15 +98,7 @@ def get_test_data(animal):
 
 # Dogs imbalanced testing data
 def get_imbal_labels(animal):
-    chosen_category = None
-    if animal == "cat":
-        chosen_category = 3
-    elif animal == "dog":
-        chosen_category = 5
-    elif animal == "horse":
-        chosen_category = 7
-    elif animal == "ship":
-        chosen_category = 8
+    chosen_category = _get_category_by_name(animal)
 
     labels_train, images_train, labels_test, images_test = _get_original_dataset()
     imbal_test_labels = np.empty(labels_test.shape)

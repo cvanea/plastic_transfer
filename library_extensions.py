@@ -60,7 +60,8 @@ def get_apoz(model, layer, x_val, node_indices=None):
 # Records data at each epoch of training.
 class PredictionHistory(Callback):
     def __init__(self, model, train_images, train_labels, val_images,
-                 val_labels, test_images, test_labels):
+                 val_labels, test_images, test_labels, save_opp=False, opp_train_images=None, opp_train_labels=None,
+                 opp_val_images=None, opp_val_labels=None, opp_test_images=None, opp_test_labels=None):
         super().__init__()
         self.model = model
         self.train_images = train_images
@@ -69,6 +70,14 @@ class PredictionHistory(Callback):
         self.val_labels = val_labels
         self.test_images = test_images
         self.test_labels = test_labels
+        self.save_opp = save_opp
+        if save_opp:
+            self.opp_train_images = opp_train_images
+            self.opp_train_labels = opp_train_labels
+            self.opp_val_images = opp_val_images
+            self.opp_val_labels = opp_val_labels
+            self.opp_test_images = opp_test_images
+            self.opp_test_labels = opp_test_labels
         self.train = {}
         self.val = {}
         self.test = {}
@@ -78,6 +87,10 @@ class PredictionHistory(Callback):
         self.train['acc'] = []
         self.val['acc'] = []
         self.test['acc'] = []
+        if save_opp:
+            self.train['opp_mcc'] = []
+            self.val['opp_mcc'] = []
+            self.test['opp_mcc'] = []
 
     def on_epoch_begin(self, epoch, logs={}):
         pred_train_classes = self.model.predict_classes(self.train_images)
@@ -98,6 +111,17 @@ class PredictionHistory(Callback):
         current_test_accuracy = self.model.evaluate(self.test_images, self.test_labels)[1]
         self.test['acc'].append(current_test_accuracy)
 
+        if self.save_opp:
+            opp_pred_train_classes = self.model.predict_classes(self.opp_train_images)
+            self.train['opp_mcc'].append(matthews_corrcoef(self.opp_train_labels, opp_pred_train_classes))
+
+            opp_pred_val_classes = self.model.predict_classes(self.opp_val_images)
+            self.val['opp_mcc'].append(matthews_corrcoef(self.opp_val_labels, opp_pred_val_classes))
+
+            opp_pred_test_classes = self.model.predict_classes(self.opp_test_images)
+            self.test['opp_mcc'].append(matthews_corrcoef(self.opp_test_labels, opp_pred_test_classes))
+
+
     def on_train_end(self, logs={}):
         pred_train_classes = self.model.predict_classes(self.train_images)
         self.train['mcc'].append(matthews_corrcoef(self.train_labels, pred_train_classes))
@@ -117,6 +141,17 @@ class PredictionHistory(Callback):
         current_test_accuracy = self.model.evaluate(self.test_images, self.test_labels)[1]
         self.test['acc'].append(current_test_accuracy)
 
+        if self.save_opp:
+            opp_pred_train_classes = self.model.predict_classes(self.opp_train_images)
+            self.train['opp_mcc'].append(matthews_corrcoef(self.opp_train_labels, opp_pred_train_classes))
+
+            opp_pred_val_classes = self.model.predict_classes(self.opp_val_images)
+            self.val['opp_mcc'].append(matthews_corrcoef(self.opp_val_labels, opp_pred_val_classes))
+
+            opp_pred_test_classes = self.model.predict_classes(self.opp_test_images)
+            self.test['opp_mcc'].append(matthews_corrcoef(self.opp_test_labels, opp_pred_test_classes))
+
+
 # Stopping the source network at the target accuracy peak.
 class EarlyStoppingWithMax(EarlyStopping):
     def __init__(self, target=None, **kwargs):
@@ -128,6 +163,7 @@ class EarlyStoppingWithMax(EarlyStopping):
         if self.target and self.monitor_op(current, self.target):
             self.stopped_epoch = epoch
             self.model.stop_training = True
+
 
 # Library bug fix.
 class MySurgeon(Surgeon):

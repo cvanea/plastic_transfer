@@ -72,19 +72,19 @@ class TestRun(unittest.TestCase):
         }
 
         r = Run("unit_test", 0)
-        r.seeded.update(1, m)
+        r.target.update(1, m)
         r.naive.update(1, m)
-        r.seeded.update(2, m2)
+        r.target.update(2, m2)
         r.naive.update(2, m2)
-        r.seeded.update(3, m)
+        r.target.update(3, m)
         r.naive.update(3, m)
-        r.seeded.update(4, m2)
+        r.target.update(4, m2)
         r.naive.update(4, m2)
 
-        self.assertListEqual(m.val['mcc'], list(r.seeded.val.mcc.df["1"].values))
-        self.assertListEqual(m2.val['mcc'], list(r.seeded.val.mcc.df["2"].values))
-        self.assertListEqual(m.val['mcc'], list(r.seeded.val.mcc.df["3"].values))
-        self.assertListEqual(m2.val['mcc'], list(r.seeded.val.mcc.df["4"].values))
+        self.assertListEqual(m.val['mcc'], list(r.target.val.mcc.df["1"].values))
+        self.assertListEqual(m2.val['mcc'], list(r.target.val.mcc.df["2"].values))
+        self.assertListEqual(m.val['mcc'], list(r.target.val.mcc.df["3"].values))
+        self.assertListEqual(m2.val['mcc'], list(r.target.val.mcc.df["4"].values))
 
 # class TestApoz(unittest.TestCase):
 #     def test_get_apoz(self):
