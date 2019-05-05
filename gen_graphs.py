@@ -92,8 +92,8 @@ def gen_graphs(run, target=True, naive=True, save_opp=False):
                 measure = getattr(dataset, m).df
                 data[d][m] = measure.mean(axis=1)
 
-            compare_average_network_performance(d, "mcc", network.path, data[d]["mcc"], data[d]["opp_mcc"], "target",
-                                                "source")
+            compare_average_network_performance(d, "mcc", network.path, data[d]["mcc"], data[d]["opp_mcc"], "source",
+                                                "target")
 
 
 # All seeds of the performance measure for one network
@@ -130,8 +130,13 @@ def compare_network_performance(dataset, measure, path, first_data, second_data)
 
 # Comparison of average performance measure for two networks for one dataset
 def compare_average_network_performance(dataset, measure, path, first_data, second_data, first_label, second_label):
-    plt.plot(first_data, label=first_label)
-    plt.plot(second_data, label=second_label)
+    if first_label == "target":
+        plt.plot(first_data, label=first_label, color='C0')
+        plt.plot(second_data, label=second_label, color='C1')
+    else:
+        plt.plot(first_data, label=first_label, color='C1')
+        plt.plot(second_data, label=second_label, color='C0')
+
     plt.xlabel('epochs')
     plt.ylabel(measure)
     plt.title(dataset + ' ' + measure + " averaged")
