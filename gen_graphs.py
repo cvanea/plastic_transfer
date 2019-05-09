@@ -57,8 +57,8 @@ def gen_graphs(run, target=True, naive=True, save_opp=False):
                 data[d][m] = measure.mean(axis=1)
 
             if save_opp:
-                compare_average_network_performance(d, "mcc", run.path, data[d]["mcc"], data[d]["opp_mcc"], "target",
-                                                    "source")
+                compare_average_network_performance(d, "mcc", network.path, data[d]["mcc"], data[d]["opp_mcc"],
+                                                    "target", "source")
 
         all_averaged_dataset_performance("target", "acc", network.path, data)
         all_averaged_dataset_performance("target", "mcc", network.path, data)

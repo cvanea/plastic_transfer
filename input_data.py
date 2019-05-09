@@ -51,8 +51,15 @@ def get_training_and_val_data(animal):
     shuffled_filtered_labels, shuffled_filtered_images = shuffle(filtered_labels, filtered_images,
                                                                  random_state=0)
 
-    shuffled_filtered_labels[shuffled_filtered_labels != chosen_category] = 0
-    shuffled_filtered_labels[shuffled_filtered_labels == chosen_category] = 1
+    if chosen_category == 0:
+        shuffled_filtered_labels[shuffled_filtered_labels == 1] = 10
+        shuffled_filtered_labels[shuffled_filtered_labels == chosen_category] = 1
+        shuffled_filtered_labels[shuffled_filtered_labels != 1] = 0
+    elif chosen_category == 1:
+        shuffled_filtered_labels[shuffled_filtered_labels != chosen_category] = 0
+    else:
+        shuffled_filtered_labels[shuffled_filtered_labels != chosen_category] = 0
+        shuffled_filtered_labels[shuffled_filtered_labels == chosen_category] = 1
 
     split_at = 7992
     (shuffled_filtered_images, val_images) = \
@@ -78,22 +85,30 @@ def get_test_data(animal):
     chosen_category = _get_category_by_name(animal)
 
     labels_train, images_train, labels_test, images_test = _get_original_dataset()
-    test_filtered_labels, test_filtered_images = _balance_data(labels_test, images_test, 10, 1000, chosen_category)
+    filtered_labels, filtered_images = _balance_data(labels_test, images_test, 10, 1000, chosen_category)
 
-    shuffled_test_filtered_labels, shuffled_test_filtered_images = shuffle(test_filtered_labels,
-                                                                           test_filtered_images,
+    shuffled_filtered_labels, shuffled_filtered_images = shuffle(filtered_labels,
+                                                                           filtered_images,
                                                                            random_state=0)
 
-    shuffled_test_filtered_labels[shuffled_test_filtered_labels != chosen_category] = 0
-    shuffled_test_filtered_labels[shuffled_test_filtered_labels == chosen_category] = 1
+    if chosen_category == 0:
+        shuffled_filtered_labels[shuffled_filtered_labels == 1] = 10
+        shuffled_filtered_labels[shuffled_filtered_labels == chosen_category] = 1
+        shuffled_filtered_labels[shuffled_filtered_labels != 1] = 0
+    elif chosen_category == 1:
+        shuffled_filtered_labels[shuffled_filtered_labels != chosen_category] = 0
+    else:
+        shuffled_filtered_labels[shuffled_filtered_labels != chosen_category] = 0
+        shuffled_filtered_labels[shuffled_filtered_labels == chosen_category] = 1
 
-    shuffled_test_filtered_images = shuffled_test_filtered_images.astype('float32')
-    shuffled_test_filtered_images /= 255
 
-    assert np.logical_or(shuffled_test_filtered_labels == 0, shuffled_test_filtered_labels == 1).all()
-    assert shuffled_test_filtered_labels.shape[0] == 1998
+    shuffled_filtered_images = shuffled_filtered_images.astype('float32')
+    shuffled_filtered_images /= 255
 
-    return shuffled_test_filtered_labels, shuffled_test_filtered_images
+    assert np.logical_or(shuffled_filtered_labels == 0, shuffled_filtered_labels == 1).all()
+    assert shuffled_filtered_labels.shape[0] == 1998
+
+    return shuffled_filtered_labels, shuffled_filtered_images
 
 
 # Dogs imbalanced testing data
