@@ -42,11 +42,12 @@ def _get_category_by_name(category_name):
 
 
 # Balanced training data. Balanced validation data at 20% subset of training data
-def get_training_and_val_data(animal):
+def get_training_and_val_data(animal, labels_per_category=5000):
     chosen_category = _get_category_by_name(animal)
 
     labels_train, images_train, labels_test, images_test = _get_original_dataset()
-    filtered_labels, filtered_images = _balance_data(labels_train, images_train, 10, 5000, chosen_category)
+    filtered_labels, filtered_images = _balance_data(labels_train, images_train, 10, labels_per_category,
+                                                     chosen_category)
 
     shuffled_filtered_labels, shuffled_filtered_images = shuffle(filtered_labels, filtered_images,
                                                                  random_state=0)
@@ -61,7 +62,8 @@ def get_training_and_val_data(animal):
         shuffled_filtered_labels[shuffled_filtered_labels != chosen_category] = 0
         shuffled_filtered_labels[shuffled_filtered_labels == chosen_category] = 1
 
-    split_at = 7992
+    # split_at = 7992
+    split_at = int(shuffled_filtered_labels.size * 0.80)
     (shuffled_filtered_images, val_images) = \
         shuffled_filtered_images[:split_at], shuffled_filtered_images[split_at:]
     (shuffled_filtered_labels, val_labels) = \
@@ -74,8 +76,8 @@ def get_training_and_val_data(animal):
 
     assert np.logical_or(shuffled_filtered_labels == 0, shuffled_filtered_labels == 1).all()
     assert np.logical_or(val_labels == 0, val_labels == 1).all()
-    assert shuffled_filtered_labels.shape[0] == 7992
-    assert val_labels.shape[0] == 1998
+    assert shuffled_filtered_labels.shape[0] == int(filtered_labels.size * 0.80)
+    assert val_labels.shape[0] == filtered_labels.size - int(filtered_labels.size * 0.80)
 
     return shuffled_filtered_labels, shuffled_filtered_images, val_labels, val_images
 

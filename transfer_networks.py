@@ -32,8 +32,9 @@ def network(seed, run, hp):
         hp.source_animal)
     source_test_labels, source_test_images = input_data.get_test_data(hp.source_animal)
     target_train_labels, target_train_images, target_val_labels, target_val_images = input_data.get_training_and_val_data(
-        hp.target_animal)
+        hp.target_animal, labels_per_category=hp.labels_per_category)
     target_test_labels, target_test_images = input_data.get_test_data(hp.target_animal)
+
     if hp.pruning_dataset == 'p_source':
         pruning_dataset = input_data.get_category_images(source_train_labels, source_train_images, 1)
     elif hp.pruning_dataset == 'n_source':
@@ -127,6 +128,9 @@ def network(seed, run, hp):
     # APoZ method
     else:
         discard_indices = np.where((apoz <= hp.lower_threshold) | (apoz >= hp.upper_threshold))[0]
+
+
+
 
     # Creating the new target source_model.
     def my_delete_channels(model, layer, channels, *, node_indices=None):

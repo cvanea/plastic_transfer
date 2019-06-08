@@ -19,6 +19,7 @@ class Hyperparameters:
         self.target_animal = None
         self.pruning_dataset = None
         self.save_opp = None
+        self.labels_per_category = None
 
     def to_csv(self, path):
         d = {"source_max_epochs": [self.source_max_epochs], "target_max_epochs": [self.target_max_epochs],
@@ -27,7 +28,8 @@ class Hyperparameters:
              "batch_size": [self.batch_size], "conv_activation": [self.conv_activation],
              "loss_function": [self.loss_function], "pruning_method": [self.pruning_method],
              "source_animal": [self.source_animal], "target_animal": [self.target_animal],
-             "pruning_dataset": [self.pruning_dataset], "save_opp": [self.save_opp]}
+             "pruning_dataset": [self.pruning_dataset], "save_opp": [self.save_opp],
+             "labels_per_category": [self.labels_per_category]}
         hyperparams = pd.DataFrame(data=d)
 
         file_path = create_path(path, 'params.csv')
@@ -55,5 +57,6 @@ class Hyperparameters:
         m.target_animal = dict_hp_data["target_animal"]
         m.pruning_dataset = dict_hp_data["pruning_dataset"]
         m.save_opp = dict_hp_data["save_opp"]
+        m.labels_per_category = dict_hp_data["labels_per_category"]
 
         return m

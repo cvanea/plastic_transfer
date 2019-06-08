@@ -31,7 +31,7 @@ network_name = "naive"
 
 def network(seed, run, hp, num_seeded_units):
     dog_train_labels, dog_train_images, dog_val_labels, dog_val_images = data.get_training_and_val_data(
-        hp.target_animal)
+        hp.target_animal, labels_per_category=hp.labels_per_category)
     dog_test_labels, dog_test_images = data.get_test_data(hp.target_animal)
 
     # Model
