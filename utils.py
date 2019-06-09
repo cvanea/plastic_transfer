@@ -37,8 +37,6 @@ def reinitialise_weights(seed, discard_indices, model):
         fc_layer_biases[i] = k_eval(glorot_uniform(seed)([1]))[0]
         fc_layer_weights[..., i] = k_eval(glorot_uniform(seed)(fc_layer_weights[..., i].shape))
 
-    # model.set_weights(all_weights)
-
     target_model = clone_model(model)
     target_model.set_weights(all_weights)
 
