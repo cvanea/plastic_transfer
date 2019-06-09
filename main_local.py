@@ -8,9 +8,9 @@ from utils import save_results_to_bucket
 hp = hyperparam.Hyperparameters()
 hp.source_max_epochs = 1
 hp.target_max_epochs = 400
-hp.num_starting_units = 1000
+hp.num_starting_units = 100
 hp.upper_threshold = 20.0
-hp.lower_threshold = -0.1
+hp.lower_threshold = 0.1
 hp.source_lr = 0.001
 hp.target_lr = 0.0001
 hp.batch_size = 200
@@ -22,6 +22,7 @@ hp.target_animal = "deer"
 hp.pruning_dataset = "p_target"
 hp.save_opp = True
 hp.labels_per_category = 5000
+hp.reinit_weights = True
 
 run_1 = Run('exp_12', 17, hp, save_opp=hp.save_opp)
 
@@ -42,6 +43,7 @@ hp2.target_animal = "deer"
 hp2.pruning_dataset = "p_target"
 hp2.save_opp = True
 hp2.labels_per_category = 5000
+hp2.reinit_weights = True
 
 run_2 = Run('exp_12', 18, hp2, save_opp=hp2.save_opp)
 
@@ -62,6 +64,7 @@ hp3.target_animal = "deer"
 hp3.pruning_dataset = "p_target"
 hp3.save_opp = True
 hp3.labels_per_category = 5000
+hp3.reinit_weights = True
 
 run_3 = Run('exp_12', 19, hp3, save_opp=hp3.save_opp)
 
@@ -82,6 +85,7 @@ hp4.target_animal = "deer"
 hp4.pruning_dataset = "p_target"
 hp4.save_opp = True
 hp4.labels_per_category = 5000
+hp4.reinit_weights = True
 
 run_4 = Run('exp_12', 20, hp4, save_opp=hp4.save_opp)
 

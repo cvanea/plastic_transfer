@@ -129,17 +129,17 @@ def network(seed, run, hp):
     else:
         discard_indices = np.where((apoz <= hp.lower_threshold) | (apoz >= hp.upper_threshold))[0]
 
-
-
-
     # Creating the new target source_model.
-    def my_delete_channels(model, layer, channels, *, node_indices=None):
-        my_surgeon = library_extensions.MySurgeon(model)
-        my_surgeon.add_job('delete_channels', layer, node_indices=node_indices, channels=channels)
-        return my_surgeon.operate()
+    if hp.reinit_weights:
+        target_model = utils.reinitialise_weights(seed, discard_indices, source_model)
+    else:
+        def my_delete_channels(model, layer, channels, *, node_indices=None):
+            my_surgeon = library_extensions.MySurgeon(model)
+            my_surgeon.add_job('delete_channels', layer, node_indices=node_indices, channels=channels)
+            return my_surgeon.operate()
 
-    # New source_model ready for training on dogs
-    target_model = my_delete_channels(source_model, layer, discard_indices, node_indices=None)
+        # New source_model ready for training on dogs
+        target_model = my_delete_channels(source_model, layer, discard_indices, node_indices=None)
 
     print(target_model.summary())
 
