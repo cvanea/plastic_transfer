@@ -34,6 +34,11 @@ def network(seed, run, hp, num_seeded_units):
         hp.target_animal, labels_per_category=hp.labels_per_category)
     dog_test_labels, dog_test_images = data.get_test_data(hp.target_animal)
 
+    if hp.reinit_weights:
+        num_starting_units = hp.num_starting_units
+    else:
+        num_starting_units = num_seeded_units
+
     # Model
     model = Sequential()
 
@@ -55,7 +60,7 @@ def network(seed, run, hp, num_seeded_units):
     model.add(Dropout(0.25))
 
     model.add(Flatten())
-    model.add(Dense(num_seeded_units, kernel_initializer=weight_init))
+    model.add(Dense(num_starting_units, kernel_initializer=weight_init))
     model.add(Activation('relu'))
     model.add(Dense(1, kernel_initializer=weight_init))
     model.add(Activation('sigmoid'))
