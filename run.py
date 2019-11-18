@@ -6,7 +6,7 @@ from hyperparameters import Hyperparameters
 class Run:
     def __init__(self, experiment_name, run_num, hyperparameters=None, save_opp=False):
         self.hyperparameters = hyperparameters
-        self.path = create_path('results', experiment_name, "run_{}".format(str(run_num)))
+        self.path = create_path('results_uni', experiment_name, "run_{}".format(str(run_num)))
         self.single_data = None
         self.apoz_data = None
         self.activation_data = {}
