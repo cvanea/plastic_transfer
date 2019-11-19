@@ -98,6 +98,10 @@ def network(seed, run, hp):
                      validation_data=(target_train_images, target_train_labels), shuffle=True,
                      callbacks=[all_source_predictions])
 
+    # Save trained source model
+    source_model.save(utils.create_path(run.path, "source", "saved_models", "source_model_{}.h5".format(seed)))
+    print("source model saved")
+
     # Save stopped epoch variable
     if early_stopping.stopped_epoch == 0:
         cat_epoch_end = hp.source_max_epochs
@@ -168,6 +172,10 @@ def network(seed, run, hp):
 
     # Save number of neurons for use in naive network
     num_seeded_units = target_model.get_layer('fc_layer').get_config()['units']
+
+    # Save trained target model
+    target_model.save(utils.create_path(run.path, "target", "saved_models", "target_model_{}.h5".format(seed)))
+    print("target model saved")
 
     # Generate results
     run.save_opp = hp.save_opp

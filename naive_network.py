@@ -23,6 +23,7 @@ from keras.initializers import glorot_uniform
 
 import input_data as data
 import library_extensions
+import utils
 
 run_num = 1
 seed = 0
@@ -79,6 +80,10 @@ def network(seed, run, hp, num_seeded_units):
     model.fit(dog_train_images, dog_train_labels, batch_size=hp.batch_size, epochs=hp.target_max_epochs,
               validation_data=(dog_val_images, dog_val_labels), shuffle=True,
               callbacks=[all_predictions])
+
+    # Save trained model
+    model.save(utils.create_path(run.path, "naive", "saved_models", "naive_model_{}.h5".format(seed)))
+    print("naive model saved")
 
     # Generate results history
     run.naive.update(seed, all_predictions)
