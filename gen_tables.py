@@ -5,7 +5,7 @@ def results_table(exp_name, starting_run, ending_run, based_on_string):
     all_table_data = pd.DataFrame()
 
     for run in range(starting_run, ending_run + 1):
-        target_mcc_data = pd.read_csv("results_cloud/results/{}/run_{}/target/test/mcc.csv".format(exp_name, run),
+        target_mcc_data = pd.read_csv("results_uni/{}/run_{}/target/test/mcc.csv".format(exp_name, run),
                                       index_col=0)
         all_target_mcc_std = target_mcc_data.std(axis=1)
         target_mcc_std = all_target_mcc_std.mean()
@@ -15,7 +15,7 @@ def results_table(exp_name, starting_run, ending_run, based_on_string):
         start_mcc_value = target_mcc_avg[0]
         target_mcc_end = target_mcc_avg.iloc[-1]
 
-        naive_mcc_data = pd.read_csv("results_cloud/results/{}/run_{}/naive/test/mcc.csv".format(exp_name, run),
+        naive_mcc_data = pd.read_csv("results_uni/{}/run_{}/naive/test/mcc.csv".format(exp_name, run),
                                      index_col=0)
         all_naive_mcc_std = naive_mcc_data.std(axis=1)
         naive_mcc_std = all_naive_mcc_std.mean()
@@ -46,7 +46,7 @@ def results_table(exp_name, starting_run, ending_run, based_on_string):
                                    end_difference, target_mcc_std, naive_mcc_std, start_mcc_value,
                                    naive_start_mcc_value, max_value_epoch, naive_max_value_epoch, target_surpass_epoch]
 
-    all_table_data.to_csv("results_cloud/results/{}/{}.csv".format(exp_name, based_on_string))
+    all_table_data.to_csv("results_uni/{}/{}.csv".format(exp_name, based_on_string))
 
     print(all_table_data)
 
@@ -92,13 +92,9 @@ def value_at_epoch(exp_name, num_runs):
 
 
 if __name__ == "__main__":
-    # results_table("exp_15", 1, 4, "based_on_cats")
-    # results_table("exp_15", 5, 8, "based_on_horses")
-    # results_table("exp_15", 9, 12, "based_on_ships")
-    # results_table("exp_15", 13, 16, "based_on_trucks")
-    # results_table("exp_15", 29, 35, "based_on_dogs")
-    # results_table("exp_15", 36, 42, "based_on_deer")
-    # results_table("exp_15", 43, 49, "based_on_planes")
-    # results_table("exp_15", 50, 56, "based_on_cars")
+    results_table("exp_1", 1, 7, "based_on_cats")
+    results_table("exp_1", 8, 14, "based_on_deer")
+    results_table("exp_1", 15, 21, "based_on_ships")
+    results_table("exp_1", 22, 28, "based_on_cars")
 
-    value_at_epoch("exp_15", 56)
+    # value_at_epoch("exp_15", 56)

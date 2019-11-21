@@ -5,6 +5,8 @@
 
 results/
 results_uni/
+cifar/
+cifar.tgz
 # User-specific stuff
 .idea/**/workspace.xml
 .idea/**/tasks.xml
