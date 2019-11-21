@@ -10,42 +10,51 @@ from run import Run
 from utils import create_path
 
 
+exp_name = "exp_1"
+run_num = 22
+category = "car"
+attempt = 2
+dataset_type = "test"
+
 def saliency_map(run, model_type, seed, dataset_type, attempt, category=None, positive=True):
     if not category:
         category = run.hyperparameters.target_animal
 
     img = _get_image(category, dataset_type, run, positive=positive)
+    plt.imsave(create_path(run.path, model_type, "images", category, "{}_original_image.png".format(attempt)), img)
+    img = img[np.newaxis, ...]
 
     model = load_model(create_path(run.path, model_type, "saved_models", "{}_model_{}.h5".format(model_type, seed)))
+
+    print(model_type + " network predicts:")
+    print(model.predict(img))
 
     # layer_idx = utils.find_layer_idx(model, 'dense_1')
     layer_idx = 15
     model.layers[layer_idx].activation = activations.linear
     model = utils.apply_modifications(model)
 
-    plt.imsave(create_path(run.path, model_type, "images", category, "{}_original_image.png".format(attempt)), img)
-
-    grads = visualize_saliency(model, layer_idx, filter_indices=0, seed_input=img[np.newaxis, ...])
+    grads = visualize_saliency(model, layer_idx, filter_indices=0, seed_input=img)
     plt.imsave(
         create_path(run.path, model_type, "images", category, "sal", "{}_sal_image_seed{}.png".format(attempt, seed)),
         grads)
 
-    grads_guided = visualize_saliency(model, layer_idx, filter_indices=0, seed_input=img[np.newaxis, ...],
+    grads_guided = visualize_saliency(model, layer_idx, filter_indices=0, seed_input=img,
                                       backprop_modifier="guided")
     plt.imsave(create_path(run.path, model_type, "images", category, "sal",
                            "{}_sal_guided_image_seed{}.png".format(attempt, seed)), grads_guided)
 
-    acti = visualize_activation(model, layer_idx, filter_indices=0, seed_input=img[np.newaxis, ...])
+    acti = visualize_activation(model, layer_idx, filter_indices=0, seed_input=img)
     plt.imsave(
         create_path(run.path, model_type, "images", category, "acti", "{}_acti_image_seed{}.png".format(attempt, seed)),
         acti)
 
-    cam = visualize_cam(model, layer_idx, filter_indices=0, seed_input=img[np.newaxis, ...])
+    cam = visualize_cam(model, layer_idx, filter_indices=0, seed_input=img)
     plt.imsave(
         create_path(run.path, model_type, "images", category, "cam", "{}_cam_image_seed{}.png".format(attempt, seed)),
         cam)
 
-    cam_guided = visualize_cam(model, layer_idx, filter_indices=0, seed_input=img[np.newaxis, ...],
+    cam_guided = visualize_cam(model, layer_idx, filter_indices=0, seed_input=img,
                                backprop_modifier="guided")
     plt.imsave(create_path(run.path, model_type, "images", category, "cam",
                            "{}_cam_guided_image_seed{}.png".format(attempt, seed)), cam_guided)
@@ -101,11 +110,11 @@ def _alt_sal_map(model, layer_idx, img, run, model_type, seed):
 
 
 if __name__ == "__main__":
-    r = Run.restore("exp_1", 1, 3, save_opp=True)
-    for i in range(0, 3):
-        for network in ['target', 'naive', 'source']:
-            saliency_map(r, network, i, "train", 0, category="cat", positive=True)
-            print("{} network done for seed {}".format(network, i))
+    r = Run.restore(exp_name, run_num, 3, save_opp=True)
+    for network in ['target', 'naive', 'source']:
+        for seed in range(0, 3):
+            saliency_map(r, network, seed, dataset_type, attempt, category=category, positive=True)
+            print("{} network done for seed {}".format(network, seed))
 
     # for i in range(0, 3):
     #     saliency_map(r, 'target', i, "train", 0, category="dog", positive=True)
