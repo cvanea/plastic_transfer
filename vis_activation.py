@@ -12,7 +12,7 @@ from utils import create_path
 
 exp_name = "exp_1"
 run_num = 22
-category = "car"
+category = "cat"
 attempt = 2
 dataset_type = "test"
 
@@ -29,7 +29,6 @@ def saliency_map(run, model_type, seed, dataset_type, attempt, category=None, po
     print(model_type + " network predicts:")
     print(model.predict(img))
 
-    # layer_idx = utils.find_layer_idx(model, 'dense_1')
     layer_idx = 15
     model.layers[layer_idx].activation = activations.linear
     model = utils.apply_modifications(model)
